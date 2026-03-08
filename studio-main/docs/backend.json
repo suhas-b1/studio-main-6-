@@ -1,0 +1,328 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the Nourish Connect platform, either a donor or a recipient.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the user."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "The phone number of the user."
+        },
+        "organizationName": {
+          "type": "string",
+          "description": "The name of the organization the user belongs to, if applicable."
+        },
+        "isVerified": {
+          "type": "boolean",
+          "description": "Indicates whether the user has been verified by the platform."
+        },
+        "userType": {
+          "type": "string",
+          "description": "The type of user, either 'donor' or 'recipient'."
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email",
+        "userType"
+      ]
+    },
+    "FoodListing": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FoodListing",
+      "type": "object",
+      "description": "Represents a listing of surplus food available for donation.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the food listing."
+        },
+        "donorId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N FoodListing) The ID of the user who is donating the food."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the food listing."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the food available."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "The quantity of food available (e.g., in kilograms or number of portions)."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of food (e.g., 'baked goods', 'produce', 'canned goods')."
+        },
+        "pickupTime": {
+          "type": "string",
+          "description": "The latest date and time the food should be picked up.",
+          "format": "date-time"
+        },
+        "location": {
+          "type": "string",
+          "description": "The location where the food can be picked up."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the listing ('available', 'claimed', 'picked up')."
+        },
+        "image": {
+          "type": "string",
+          "description": "URL to the image of the listed food item.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "donorId",
+        "title",
+        "description",
+        "quantity",
+        "type",
+        "pickupTime",
+        "location",
+        "status"
+      ]
+    },
+    "Claim": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Claim",
+      "type": "object",
+      "description": "Represents a claim made by a recipient for a food listing.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the claim."
+        },
+        "foodListingId": {
+          "type": "string",
+          "description": "Reference to FoodListing. (Relationship: FoodListing 1:N Claim) The ID of the food listing being claimed."
+        },
+        "recipientId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Claim) The ID of the user (recipient) making the claim."
+        },
+        "claimTime": {
+          "type": "string",
+          "description": "The date and time the claim was made.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the claim ('pending', 'approved', 'rejected', 'picked up')."
+        }
+      },
+      "required": [
+        "id",
+        "foodListingId",
+        "recipientId",
+        "claimTime",
+        "status"
+      ]
+    },
+    "VerificationRequest": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "VerificationRequest",
+      "type": "object",
+      "description": "Represents a request for verification of a user (donor or recipient).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the verification request."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N VerificationRequest) The ID of the user requesting verification."
+        },
+        "requestTime": {
+          "type": "string",
+          "description": "The date and time the verification request was submitted.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the verification request ('pending', 'approved', 'rejected')."
+        },
+        "supportingDocument": {
+          "type": "string",
+          "description": "URL to a document supporting the verification request.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "requestTime",
+        "status",
+        "supportingDocument"
+      ]
+    },
+    "ImpactReport": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ImpactReport",
+      "type": "object",
+      "description": "Represents a report on the impact of a donor's food donations.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the impact report."
+        },
+        "donorId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N ImpactReport) The ID of the donor for whom the report is generated."
+        },
+        "reportPeriodStart": {
+          "type": "string",
+          "description": "The start date of the reporting period.",
+          "format": "date-time"
+        },
+        "reportPeriodEnd": {
+          "type": "string",
+          "description": "The end date of the reporting period.",
+          "format": "date-time"
+        },
+        "totalFoodDonatedKg": {
+          "type": "number",
+          "description": "The total weight of food donated in kilograms during the reporting period."
+        },
+        "estimatedMealsProvided": {
+          "type": "number",
+          "description": "The estimated number of meals provided through the donor's donations."
+        }
+      },
+      "required": [
+        "id",
+        "donorId",
+        "reportPeriodStart",
+        "reportPeriodEnd",
+        "totalFoodDonatedKg",
+        "estimatedMealsProvided"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous",
+      "google"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Path-based ownership enables straightforward security rules.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/foodListings/{foodListingId}",
+        "definition": {
+          "entityName": "FoodListing",
+          "schema": {
+            "$ref": "#/backend/entities/FoodListing"
+          },
+          "description": "Stores food listing data. The `donorId` field is included to enforce authorization independence. This enables security rules to easily determine the owner of a listing without additional `get()` calls.",
+          "params": [
+            {
+              "name": "foodListingId",
+              "description": "The unique identifier for the food listing."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/foodListings/{foodListingId}/claims/{claimId}",
+        "definition": {
+          "entityName": "Claim",
+          "schema": {
+            "$ref": "#/backend/entities/Claim"
+          },
+          "description": "Stores claims made on food listings. Includes denormalized 'foodListingId' and 'recipientId' for authorization independence, which is critical to prevent `get()` calls in rules when validating claims.",
+          "params": [
+            {
+              "name": "foodListingId",
+              "description": "The unique identifier for the food listing."
+            },
+            {
+              "name": "claimId",
+              "description": "The unique identifier for the claim."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/verificationRequests/{verificationRequestId}",
+        "definition": {
+          "entityName": "VerificationRequest",
+          "schema": {
+            "$ref": "#/backend/entities/VerificationRequest"
+          },
+          "description": "Stores verification requests. Contains 'userId' for easy rule creation. ",
+          "params": [
+            {
+              "name": "verificationRequestId",
+              "description": "The unique identifier for the verification request."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/impactReports/{impactReportId}",
+        "definition": {
+          "entityName": "ImpactReport",
+          "schema": {
+            "$ref": "#/backend/entities/ImpactReport"
+          },
+          "description": "Stores impact reports for donors. Path-based ownership simplifies authorization rules and maintains data privacy.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user (donor)."
+            },
+            {
+              "name": "impactReportId",
+              "description": "The unique identifier for the impact report."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to ensure security, scalability, and ease of debugging, adhering to the principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), and QAPs (Rules are not Filters). Authorization Independence is achieved through denormalization of user roles and relevant listing details into the documents where they are needed, avoiding the use of `get()` calls in security rules.\n\n**Authorization Independence:** The `FoodListings` collection contains the `donorId`, effectively coupling the listing to its owner. The `Claims` collection contains both the `foodListingId` and `recipientId`, enabling rules to validate recipient claims against listing availability and recipient identity without complex `get()` calls. The `VerificationRequests` collection contains `userId`, which allows for simple validation rules based on the requesting user.\n\n**Structural Segregation:** The structure segregates user data (`/users/{userId}`) from collaborative data (e.g., `/foodListings/{foodListingId}/claims/{claimId}`). Each collection has a clear and consistent security posture. For example, `users/{userId}` is private data, whereas `foodListings` are publicly listed but modifiable only by the donor.\n\n**Access Modeling:** The structure uses path-based ownership for user-owned data (`/users/{userId}/...`) and membership maps are not applicable in this case, since access is based on the user's ID. Global roles, if needed, could be managed via existence checks in a dedicated collection (e.g., `/roles_admin/{uid}`).\n\n**QAPs Support:** Secure `list` operations are supported by segregating data with different access needs. For instance, listing food donations doesn't require filtering based on user roles in the rules; the rules simply check if the listing is 'available' and any user can read it. The structure supports the integrity of ownership, timestamps, and denormalized data by enforcing strict validation rules on document creation and updates."
+  }
+}

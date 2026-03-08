@@ -1,0 +1,163 @@
+export type Language = 'en' | 'hi' | 'ta' | 'te' | 'kn' | 'mr' | 'bn' | 'gu' | 'fr' | 'es' | 'ar';
+
+export const LANGUAGE_NAMES: Record<Language, string> = {
+    en: '🇺🇸 English',
+    hi: '🇮🇳 हिन्दी (Hindi)',
+    ta: '🇮🇳 தமிழ் (Tamil)',
+    te: '🇮🇳 తెలుగు (Telugu)',
+    kn: '🇮🇳 ಕನ್ನಡ (Kannada)',
+    mr: '🇮🇳 मराठी (Marathi)',
+    bn: '🇮🇳 বাংলা (Bengali)',
+    gu: '🇮🇳 ગુજરાતી (Gujarati)',
+    fr: '🇫🇷 Français (French)',
+    es: '🇪🇸 Español (Spanish)',
+    ar: '🇸🇦 العربية (Arabic)',
+};
+
+export type TranslationKey =
+    | 'dashboard' | 'listings' | 'map' | 'profile' | 'settings'
+    | 'signOut' | 'language' | 'theme' | 'light' | 'dark' | 'system'
+    | 'accentColor' | 'security' | 'twoFactorAuth' | 'biometricLogin'
+    | 'appearance' | 'appPreferences' | 'activeSessions' | 'thisDevice'
+    | 'logOut' | 'itWasMe' | 'changePassword' | 'newDonation' | 'myDonations'
+    | 'impact' | 'foodNeedMap' | 'smartMatches' | 'myClaims' | 'add'
+    | 'donorDashboard' | 'receiverDashboard' | 'yourImpact' | 'totalFoodSaved'
+    | 'viewFullStats' | 'foodNeedHotspots' | 'recentActivity' | 'viewAll'
+    | 'urgentNeedsNearby' | 'myActiveClaims' | 'help' | 'feedback';
+
+type Translations = Record<Language, Record<TranslationKey, string>>;
+
+export const translations: Translations = {
+    en: {
+        dashboard: 'Dashboard', listings: 'Listings', map: 'Map', profile: 'Profile', settings: 'Settings',
+        signOut: 'Sign Out', language: 'Language', theme: 'Display Theme', light: 'Light', dark: 'Dark', system: 'System',
+        accentColor: 'Accent Color', security: 'Security', twoFactorAuth: 'Two-Factor Auth', biometricLogin: 'Biometric Login',
+        appearance: 'Appearance', appPreferences: 'App Preferences', activeSessions: 'Active Sessions', thisDevice: 'This device',
+        logOut: 'Log Out', itWasMe: 'It was me', changePassword: 'Change Password', newDonation: 'New Donation',
+        myDonations: 'My Donations', impact: 'Impact', foodNeedMap: 'Food Need Hotspots', smartMatches: 'Smart Matches',
+        myClaims: 'My Claims', add: 'Add', donorDashboard: 'Donor Dashboard', receiverDashboard: 'Receiver Dashboard',
+        yourImpact: 'Your Impact', totalFoodSaved: 'Total Food Saved', viewFullStats: 'View Full Stats', foodNeedHotspots: 'Food Need Hotspots',
+        recentActivity: 'Recent Activity', viewAll: 'View all', urgentNeedsNearby: 'Urgent Needs Nearby',
+        myActiveClaims: 'My Active Claims', help: 'Help', feedback: 'Feedback',
+    },
+    hi: {
+        dashboard: 'डैशबोर्ड', listings: 'सूचियाँ', map: 'नक्शा', profile: 'प्रोफ़ाइल', settings: 'सेटिंग्स',
+        signOut: 'साइन आउट', language: 'भाषा', theme: 'थीम', light: 'हल्का', dark: 'गहरा', system: 'सिस्टम',
+        accentColor: 'एक्सेंट रंग', security: 'सुरक्षा', twoFactorAuth: 'दो-चरण सत्यापन', biometricLogin: 'बायोमेट्रिक लॉगिन',
+        appearance: 'दिखावट', appPreferences: 'ऐप प्राथमिकताएँ', activeSessions: 'सक्रिय सत्र', thisDevice: 'यह डिवाइस',
+        logOut: 'लॉग आउट', itWasMe: 'यह मैं था', changePassword: 'पासवर्ड बदलें', newDonation: 'नया दान',
+        myDonations: 'मेरे दान', impact: 'प्रभाव', foodNeedMap: 'खाद्य आवश्यकता मानचित्र', smartMatches: 'स्मार्ट मिलान',
+        myClaims: 'मेरे दावे', add: 'जोड़ें', donorDashboard: 'दाता डैशबोर्ड', receiverDashboard: 'प्राप्तकर्ता डैशबोर्ड',
+        yourImpact: 'आपका प्रभाव', totalFoodSaved: 'कुल बचाया गया भोजन', viewFullStats: 'पूरे आँकड़े देखें', foodNeedHotspots: 'खाद्य हॉटस्पॉट',
+        recentActivity: 'हाल की गतिविधि', viewAll: 'सभी देखें', urgentNeedsNearby: 'निकट अत्यावश्यक जरूरतें',
+        myActiveClaims: 'मेरे सक्रिय दावे', help: 'सहायता', feedback: 'प्रतिक्रिया',
+    },
+    ta: {
+        dashboard: 'டாஷ்போர்டு', listings: 'பட்டியல்கள்', map: 'வரைபடம்', profile: 'சுயவிவரம்', settings: 'அமைப்புகள்',
+        signOut: 'வெளியேறு', language: 'மொழி', theme: 'தீம்', light: 'வெளிர்', dark: 'இருண்ட', system: 'கணினி',
+        accentColor: 'நிறம்', security: 'பாதுகாப்பு', twoFactorAuth: 'இரு-படி சரிபார்ப்பு', biometricLogin: 'உயிரியல் உள்நுழைவு',
+        appearance: 'தோற்றம்', appPreferences: 'விருப்பத்தேர்வுகள்', activeSessions: 'செயல்பாட்டு அமர்வுகள்', thisDevice: 'இந்த சாதனம்',
+        logOut: 'வெளியேறு', itWasMe: 'நான்தான்', changePassword: 'கடவுச்சொல் மாற்று', newDonation: 'புதிய தானம்',
+        myDonations: 'என் தானங்கள்', impact: 'தாக்கம்', foodNeedMap: 'உணவு தேவை வரைபடம்', smartMatches: 'திறன் பொருத்தம்',
+        myClaims: 'என் கோரிக்கைகள்', add: 'சேர்', donorDashboard: 'நன்கொடையாளர் டாஷ்போர்டு', receiverDashboard: 'பெறுநர் டாஷ்போர்டு',
+        yourImpact: 'உங்கள் தாக்கம்', totalFoodSaved: 'மொத்த சேமிக்கப்பட்ட உணவு', viewFullStats: 'முழு புள்ளிவிவரம்', foodNeedHotspots: 'உணவு ஹாட்ஸ்பாட்',
+        recentActivity: 'சமீபத்திய செயல்பாடு', viewAll: 'அனைத்தையும் காண்க', urgentNeedsNearby: 'அவசர தேவைகள்',
+        myActiveClaims: 'என் செயல் கோரிக்கைகள்', help: 'உதவி', feedback: 'கருத்து',
+    },
+    te: {
+        dashboard: 'డాష్‌బోర్డ్', listings: 'జాబితాలు', map: 'మ్యాప్', profile: 'ప్రొఫైల్', settings: 'సెట్టింగులు',
+        signOut: 'సైన్ అవుట్', language: 'భాష', theme: 'థీమ్', light: 'లైట్', dark: 'డార్క్', system: 'సిస్టమ్',
+        accentColor: 'యాక్సెంట్ రంగు', security: 'భద్రత', twoFactorAuth: 'రెండు-స్తర ధృవీకరణ', biometricLogin: 'బయోమెట్రిక్ లాగిన్',
+        appearance: 'రూపం', appPreferences: 'యాప్ ప్రాధాన్యతలు', activeSessions: 'యాక్టివ్ సెషన్లు', thisDevice: 'ఈ పరికరం',
+        logOut: 'లాగ్ అవుట్', itWasMe: 'అది నేనే', changePassword: 'పాస్‌వర్డ్ మార్చు', newDonation: 'కొత్త విరాళం',
+        myDonations: 'నా విరాళాలు', impact: 'ప్రభావం', foodNeedMap: 'ఆహార అవసర మ్యాప్', smartMatches: 'స్మార్ట్ మ్యాచ్‌లు',
+        myClaims: 'నా క్లెయిమ్‌లు', add: 'జోడించు', donorDashboard: 'దాత డాష్‌బోర్డ్', receiverDashboard: 'గ్రహీత డాష్‌బోర్డ్',
+        yourImpact: 'మీ ప్రభావం', totalFoodSaved: 'మొత్తం ఆహారం ఆదా', viewFullStats: 'పూర్తి గణాంకాలు', foodNeedHotspots: 'ఆహార హాట్‌స్పాట్‌లు',
+        recentActivity: 'ఇటీవలి కార్యకలాపం', viewAll: 'అన్నీ చూడు', urgentNeedsNearby: 'సమీప అత్యవసర అవసరాలు',
+        myActiveClaims: 'నా క్రియాశీల క్లెయిమ్‌లు', help: 'సహాయం', feedback: 'అభిప్రాయం',
+    },
+    kn: {
+        dashboard: 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್', listings: 'ಪಟ್ಟಿಗಳು', map: 'ನಕ್ಷೆ', profile: 'ಪ್ರೊಫೈಲ್', settings: 'ಸೆಟ್ಟಿಂಗ್‌ಗಳು',
+        signOut: 'ಸೈನ್ ಔಟ್', language: 'ಭಾಷೆ', theme: 'ಥೀಮ್', light: 'ಬೆಳಕು', dark: 'ಗಾಢ', system: 'ಸಿಸ್ಟಮ್',
+        accentColor: 'ಆಕ್ಸೆಂಟ್ ಬಣ್ಣ', security: 'ಭದ್ರತೆ', twoFactorAuth: 'ಎರಡು-ಅಂಶ ಪರಿಶೀಲನೆ', biometricLogin: 'ಬಯೋಮೆಟ್ರಿಕ್ ಲಾಗಿನ್',
+        appearance: 'ನೋಟ', appPreferences: 'ಆಪ್ ಆದ್ಯತೆಗಳು', activeSessions: 'ಸಕ್ರಿಯ ಸೆಷನ್‌ಗಳು', thisDevice: 'ಈ ಸಾಧನ',
+        logOut: 'ಲಾಗ್ ಔಟ್', itWasMe: 'ಅದು ನಾನೇ', changePassword: 'ಪಾಸ್‌ವರ್ಡ್ ಬದಲಿಸಿ', newDonation: 'ಹೊಸ ದೇಣಿಗೆ',
+        myDonations: 'ನನ್ನ ದೇಣಿಗೆಗಳು', impact: 'ಪ್ರಭಾವ', foodNeedMap: 'ಆಹಾರ ಅಗತ್ಯ ನಕ್ಷೆ', smartMatches: 'ಸ್ಮಾರ್ಟ್ ಮ್ಯಾಚ್‌ಗಳು',
+        myClaims: 'ನನ್ನ ಹಕ್ಕುಗಳು', add: 'ಸೇರಿಸು', donorDashboard: 'ದಾನಿ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್', receiverDashboard: 'ಸ್ವೀಕರಿಸುವವರ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್',
+        yourImpact: 'ನಿಮ್ಮ ಪ್ರಭಾವ', totalFoodSaved: 'ಒಟ್ಟು ಉಳಿಸಿದ ಆಹಾರ', viewFullStats: 'ಪೂರ್ಣ ಅಂಕಿ ಅಂಶ', foodNeedHotspots: 'ಆಹಾರ ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು',
+        recentActivity: 'ಇತ್ತೀಚಿನ ಚಟುವಟಿಕೆ', viewAll: 'ಎಲ್ಲ ನೋಡಿ', urgentNeedsNearby: 'ಸಮೀಪದ ತುರ್ತು ಅಗತ್ಯಗಳು',
+        myActiveClaims: 'ನನ್ನ ಸಕ್ರಿಯ ಹಕ್ಕುಗಳು', help: 'ಸಹಾಯ', feedback: 'ಪ್ರತಿಕ್ರಿಯೆ',
+    },
+    mr: {
+        dashboard: 'डॅशबोर्ड', listings: 'यादी', map: 'नकाशा', profile: 'प्रोफाइल', settings: 'सेटिंग्ज',
+        signOut: 'साइन आउट', language: 'भाषा', theme: 'थीम', light: 'हलका', dark: 'गडद', system: 'प्रणाली',
+        accentColor: 'ॲक्सेंट रंग', security: 'सुरक्षा', twoFactorAuth: 'दोन-स्तर प्रमाणीकरण', biometricLogin: 'बायोमेट्रिक लॉगिन',
+        appearance: 'देखावा', appPreferences: 'अॅप प्राधान्ये', activeSessions: 'सक्रिय सत्रे', thisDevice: 'हे डिव्हाइस',
+        logOut: 'लॉग आउट', itWasMe: 'तो मी होतो', changePassword: 'पासवर्ड बदला', newDonation: 'नवीन देणगी',
+        myDonations: 'माझ्या देणग्या', impact: 'प्रभाव', foodNeedMap: 'अन्न गरज नकाशा', smartMatches: 'स्मार्ट जुळणी',
+        myClaims: 'माझे दावे', add: 'जोडा', donorDashboard: 'दाता डॅशबोर्ड', receiverDashboard: 'प्राप्तकर्ता डॅशबोर्ड',
+        yourImpact: 'तुमचा प्रभाव', totalFoodSaved: 'एकूण वाचविलेले अन्न', viewFullStats: 'पूर्ण आकडेवारी', foodNeedHotspots: 'अन्न हॉटस्पॉट',
+        recentActivity: 'अलीकडील क्रियाकलाप', viewAll: 'सर्व पहा', urgentNeedsNearby: 'जवळच्या तातडीच्या गरजा',
+        myActiveClaims: 'माझे सक्रिय दावे', help: 'मदत', feedback: 'अभिप्राय',
+    },
+    bn: {
+        dashboard: 'ড্যাশবোর্ড', listings: 'তালিকা', map: 'মানচিত্র', profile: 'প্রোফাইল', settings: 'সেটিংস',
+        signOut: 'সাইন আউট', language: 'ভাষা', theme: 'থিম', light: 'হালকা', dark: 'গাঢ়', system: 'সিস্টেম',
+        accentColor: 'অ্যাকসেন্ট রং', security: 'নিরাপত্তা', twoFactorAuth: 'দুই-ধাপ যাচাই', biometricLogin: 'বায়োমেট্রিক লগইন',
+        appearance: 'চেহারা', appPreferences: 'অ্যাপ পছন্দ', activeSessions: 'সক্রিয় সেশন', thisDevice: 'এই ডিভাইস',
+        logOut: 'লগ আউট', itWasMe: 'এটা আমি ছিলাম', changePassword: 'পাসওয়ার্ড পরিবর্তন', newDonation: 'নতুন দান',
+        myDonations: 'আমার দান', impact: 'প্রভাব', foodNeedMap: 'খাদ্য প্রয়োজন মানচিত্র', smartMatches: 'স্মার্ট ম্যাচ',
+        myClaims: 'আমার দাবি', add: 'যোগ করুন', donorDashboard: 'দাতার ড্যাশবোর্ড', receiverDashboard: 'গ্রহীতার ড্যাশবোর্ড',
+        yourImpact: 'আপনার প্রভাব', totalFoodSaved: 'মোট সংরক্ষিত খাদ্য', viewFullStats: 'পূর্ণ পরিসংখ্যান', foodNeedHotspots: 'খাদ্য হটস্পট',
+        recentActivity: 'সাম্প্রতিক কার্যক্রম', viewAll: 'সব দেখুন', urgentNeedsNearby: 'কাছের জরুরি প্রয়োজন',
+        myActiveClaims: 'আমার সক্রিয় দাবি', help: 'সাহায্য', feedback: 'মতামত',
+    },
+    gu: {
+        dashboard: 'ડૅશબોર્ડ', listings: 'યાદી', map: 'નકશો', profile: 'પ્રોફાઇલ', settings: 'સેટિંગ',
+        signOut: 'સાઇન આઉટ', language: 'ભાષા', theme: 'થીમ', light: 'શ્વેત', dark: 'ઘેરો', system: 'સિસ્ટમ',
+        accentColor: 'આક્સેન્ટ રંગ', security: 'સુરક્ષા', twoFactorAuth: 'દ્વિ-સ્તર ચકાસણી', biometricLogin: 'બાયોમેટ્રિક લૉગિન',
+        appearance: 'દેખાવ', appPreferences: 'ઍપ પ્રાધાન્ય', activeSessions: 'સક્રિય સત્રો', thisDevice: 'આ ઉપકરણ',
+        logOut: 'લૉગ આઉટ', itWasMe: 'તે હું હતો', changePassword: 'પાસવર્ડ બદલો', newDonation: 'નવું દાન',
+        myDonations: 'મારા દાન', impact: 'અસર', foodNeedMap: 'ખોરાક જરૂર નકશો', smartMatches: 'સ્માર્ટ મૅચ',
+        myClaims: 'મારા દાવા', add: 'ઉમેરો', donorDashboard: 'દાતા ડૅશબોર્ડ', receiverDashboard: 'ગ્રાહક ડૅશબોર્ડ',
+        yourImpact: 'તમારી અસર', totalFoodSaved: 'કુલ બચાવેલ ખોરાક', viewFullStats: 'સંપૂર્ણ આંકડા', foodNeedHotspots: 'ફૂડ હૉટસ્પૉટ',
+        recentActivity: 'તાજેતરની પ્રવૃત્તિ', viewAll: 'બધું જુઓ', urgentNeedsNearby: 'નજીકની તાકીની જરૂરિયાત',
+        myActiveClaims: 'મારા સક્રિય દાવા', help: 'સહાય', feedback: 'પ્રતિભાવ',
+    },
+    fr: {
+        dashboard: 'Tableau de bord', listings: 'Annonces', map: 'Carte', profile: 'Profil', settings: 'Paramètres',
+        signOut: 'Se déconnecter', language: 'Langue', theme: 'Thème', light: 'Clair', dark: 'Sombre', system: 'Système',
+        accentColor: 'Couleur d\'accent', security: 'Sécurité', twoFactorAuth: 'Authentification à deux facteurs', biometricLogin: 'Connexion biométrique',
+        appearance: 'Apparence', appPreferences: 'Préférences', activeSessions: 'Sessions actives', thisDevice: 'Cet appareil',
+        logOut: 'Se déconnecter', itWasMe: 'C\'était moi', changePassword: 'Changer le mot de passe', newDonation: 'Nouveau don',
+        myDonations: 'Mes dons', impact: 'Impact', foodNeedMap: 'Carte des besoins alimentaires', smartMatches: 'Correspondances intelligentes',
+        myClaims: 'Mes demandes', add: 'Ajouter', donorDashboard: 'Tableau donateur', receiverDashboard: 'Tableau bénéficiaire',
+        yourImpact: 'Votre impact', totalFoodSaved: 'Total nourriture sauvée', viewFullStats: 'Voir les stats complètes', foodNeedHotspots: 'Points chauds alimentaires',
+        recentActivity: 'Activité récente', viewAll: 'Tout voir', urgentNeedsNearby: 'Besoins urgents proches',
+        myActiveClaims: 'Mes demandes actives', help: 'Aide', feedback: 'Commentaires',
+    },
+    es: {
+        dashboard: 'Panel', listings: 'Listados', map: 'Mapa', profile: 'Perfil', settings: 'Configuración',
+        signOut: 'Cerrar sesión', language: 'Idioma', theme: 'Tema', light: 'Claro', dark: 'Oscuro', system: 'Sistema',
+        accentColor: 'Color de acento', security: 'Seguridad', twoFactorAuth: 'Autenticación de dos factores', biometricLogin: 'Inicio biométrico',
+        appearance: 'Apariencia', appPreferences: 'Preferencias', activeSessions: 'Sesiones activas', thisDevice: 'Este dispositivo',
+        logOut: 'Cerrar sesión', itWasMe: 'Era yo', changePassword: 'Cambiar contraseña', newDonation: 'Nueva donación',
+        myDonations: 'Mis donaciones', impact: 'Impacto', foodNeedMap: 'Mapa de necesidades', smartMatches: 'Coincidencias inteligentes',
+        myClaims: 'Mis reclamos', add: 'Agregar', donorDashboard: 'Panel donante', receiverDashboard: 'Panel receptor',
+        yourImpact: 'Tu impacto', totalFoodSaved: 'Total alimentos salvados', viewFullStats: 'Ver estadísticas', foodNeedHotspots: 'Puntos calientes',
+        recentActivity: 'Actividad reciente', viewAll: 'Ver todo', urgentNeedsNearby: 'Necesidades urgentes cercanas',
+        myActiveClaims: 'Mis reclamos activos', help: 'Ayuda', feedback: 'Comentarios',
+    },
+    ar: {
+        dashboard: 'لوحة التحكم', listings: 'القوائم', map: 'الخريطة', profile: 'الملف الشخصي', settings: 'الإعدادات',
+        signOut: 'تسجيل الخروج', language: 'اللغة', theme: 'المظهر', light: 'فاتح', dark: 'داكن', system: 'النظام',
+        accentColor: 'لون التمييز', security: 'الأمان', twoFactorAuth: 'المصادقة الثنائية', biometricLogin: 'تسجيل البيومتري',
+        appearance: 'المظهر', appPreferences: 'تفضيلات التطبيق', activeSessions: 'الجلسات النشطة', thisDevice: 'هذا الجهاز',
+        logOut: 'تسجيل الخروج', itWasMe: 'كنت أنا', changePassword: 'تغيير كلمة المرور', newDonation: 'تبرع جديد',
+        myDonations: 'تبرعاتي', impact: 'الأثر', foodNeedMap: 'خريطة الاحتياجات', smartMatches: 'المطابقات الذكية',
+        myClaims: 'مطالباتي', add: 'إضافة', donorDashboard: 'لوحة المتبرع', receiverDashboard: 'لوحة المستلم',
+        yourImpact: 'أثرك', totalFoodSaved: 'إجمالي الطعام المحفوظ', viewFullStats: 'عرض الإحصائيات', foodNeedHotspots: 'نقاط الاحتياج',
+        recentActivity: 'النشاط الأخير', viewAll: 'عرض الكل', urgentNeedsNearby: 'الاحتياجات العاجلة القريبة',
+        myActiveClaims: 'مطالباتي النشطة', help: 'مساعدة', feedback: 'ملاحظات',
+    },
+};

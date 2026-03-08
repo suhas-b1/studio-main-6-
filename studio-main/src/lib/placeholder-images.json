@@ -1,0 +1,52 @@
+{
+  "placeholderImages": [
+    {
+      "id": "community-gathering",
+      "description": "A diverse group of people happily sharing a meal outdoors at a long table.",
+      "imageUrl": "https://images.unsplash.com/photo-1757105258788-54298e46fc95?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjb21tdW5pdHklMjBmb29kfGVufDB8fHx8MTc2MDk4MDQ1N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "community food"
+    },
+    {
+      "id": "food-rice-bags",
+      "description": "Large bags of white rice.",
+      "imageUrl": "https://images.unsplash.com/photo-1723475158229-894679ca024e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxiYWdzJTIwb2YlMjByaWNlfGVufDB8fHx8MTc2MTA0NTgxNnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "rice bags"
+    },
+    {
+      "id": "food-biryani",
+      "description": "A large pot of chicken biryani.",
+      "imageUrl": "https://images.unsplash.com/photo-1589302168068-964664d93dc0?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "chicken biryani"
+    },
+    {
+      "id": "food-chapati-pulao",
+      "description": "Plates of Indian food including chapati and pulao rice.",
+      "imageUrl": "https://images.unsplash.com/photo-1600935926387-12d9b03066f0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxDaGFwYXRpJTIwfGVufDB8fHx8MTc2MTA0Njc5NXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "chapati pulao"
+    },
+    {
+      "id": "food-pastries",
+      "description": "A tray of assorted sweet pastries.",
+      "imageUrl": "https://images.unsplash.com/photo-1599785209707-a456fc1337bb?q=80&w=1964&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "assorted pastries"
+    },
+    {
+      "id": "canned-tuna",
+      "description": "Stacks of canned tuna.",
+      "imageUrl": "https://images.unsplash.com/photo-1625246328563-6e4804a8b753?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "canned tuna"
+    },
+    {
+      "id": "pasta-boxes",
+      "description": "Boxes of various types of pasta.",
+      "imageUrl": "https://images.unsplash.com/photo-1608894165902-b912059954d7?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "pasta boxes"
+    },
+    {
+      "id": "cartons-of-milk",
+      "description": "Cartons of long-life UHT milk.",
+      "imageUrl": "https://images.unsplash.com/photo-1627515431631-4652ba8512a2?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "milk cartons"
+    }
+  ]
+}
