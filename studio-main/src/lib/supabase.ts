@@ -5,7 +5,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
     if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-        console.error('Supabase credentials missing! Please check your .env.local file and restart your dev server.');
+        console.warn('Supabase credentials missing! Using mock data instead. Please check your .env.local file to use real data.');
     } else {
         console.warn('Supabase credentials missing during server execution.');
     }

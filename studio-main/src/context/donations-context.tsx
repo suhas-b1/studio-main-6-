@@ -19,43 +19,51 @@ export const DonationsProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchDonations = useCallback(async () => {
     try {
+      // Try to fetch from Supabase first
       const { data, error } = await supabase
         .from('donations')
         .select(`*, profiles:donor_id (*)`)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
-      const mappedData = data.map((d: any) => ({
-        id: d.id,
-        title: d.title,
-        description: d.description,
-        imageUrl: d.image_url,
-        imageHint: d.image_hint,
-        quantity: d.quantity,
-        type: d.type,
-        pickupDeadline: new Date(d.pickup_deadline),
-        location: d.location || '',
-        donorId: d.donor_id,
-        donor: d.profiles ? {
-          id: d.profiles.id,
-          name: d.profiles.name,
-          email: d.profiles.email,
-          avatarUrl: d.profiles.avatar_url,
-          role: d.profiles.role,
-          organizationName: d.profiles.organization_name,
-          isVerified: d.profiles.is_verified,
-          phone: d.profiles.phone,
-        } : null,
-        status: d.status,
-        claimedByNgoId: d.claimed_by_ngo_id,
-        createdAt: new Date(d.created_at),
-        distance: d.distance
-      }));
+      if (data) {
+        const mappedData = data.map((d: any) => ({
+          id: d.id,
+          title: d.title,
+          description: d.description,
+          imageUrl: d.image_url,
+          imageHint: d.image_hint,
+          quantity: d.quantity,
+          type: d.type,
+          pickupDeadline: new Date(d.pickup_deadline),
+          location: d.location || '',
+          donorId: d.donor_id,
+          donor: d.profiles ? {
+            id: d.profiles.id,
+            name: d.profiles.name,
+            email: d.profiles.email,
+            avatarUrl: d.profiles.avatar_url,
+            role: d.profiles.role,
+            organizationName: d.profiles.organization_name,
+            isVerified: d.profiles.is_verified,
+            phone: d.profiles.phone,
+          } : null,
+          status: d.status,
+          claimedByNgoId: d.claimed_by_ngo_id,
+          createdAt: new Date(d.created_at),
+          distance: d.distance
+        }));
 
-      setDonations(mappedData as unknown as Donation[]);
-    } catch (error) {
-      console.error('Error fetching donations:', error);
+        setDonations(mappedData as unknown as Donation[]);
+      }
+    } catch (error: any) {
+      console.warn('Supabase fetch failed, falling back to mock data. Error:', error?.message || JSON.stringify(error));
+      import('@/lib/mock-data').then((module) => {
+        setDonations(module.mockDonations);
+      });
     } finally {
       setIsLoading(false);
     }

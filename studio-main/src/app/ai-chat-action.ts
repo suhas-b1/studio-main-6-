@@ -124,6 +124,7 @@ ${contextBlock}`;
         });
 
         const reply = response.text ?? 'I could not generate a response. Please try again.';
+
         return { reply };
 
     } catch (error: any) {

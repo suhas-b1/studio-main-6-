@@ -358,6 +358,15 @@ export function NewDonationForm() {
                                 <FormMessage />
                             </FormItem>
                         )} />
+                        {/* Inline Submit Button */}
+                        <div className="pt-4">
+                            <button
+                                type="submit"
+                                className="w-full py-3.5 rounded-2xl font-bold text-sm text-black transition active:scale-95 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
+                            >
+                                List New Donation
+                            </button>
+                        </div>
                     </div>
                 </form>
             </Form>
