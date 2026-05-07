@@ -1,7 +1,7 @@
 
 import type { LucideIcon } from "lucide-react";
 
-export type UserRole = "donor" | "ngo";
+export type UserRole = "donor" | "ngo" | "volunteer";
 
 export type UserAddress = {
   id: string;

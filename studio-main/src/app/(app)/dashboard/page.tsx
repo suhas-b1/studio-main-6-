@@ -13,6 +13,7 @@ import { EmergencyButton } from '@/components/emergency/emergency-button';
 import { useEmergencyAlerts } from '@/context/emergency-alerts-context';
 import { calculateDistance } from '@/lib/distance';
 import { useEffect, useState } from 'react';
+import { ActiveDeliveriesDashboard } from '@/components/delivery/active-deliveries-dashboard';
 
 /* ─── small helpers ─────────────────────────────────────── */
 const BAR_DATA = [38, 55, 42, 70, 63, 85, 100]; // last 7 days, % of max
@@ -330,9 +331,9 @@ const NgoDashboard = () => {
                 </span>
                 {d.status === 'claimed' && (
                   <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 rounded-full border-primary/50 text-primary hover:bg-primary/10" asChild>
-                    <Link href={`/tracker/${d.id}?role=ngo`}>
+                    <button onClick={() => {}}>
                       Track Live
-                    </Link>
+                    </button>
                   </Button>
                 )}
               </div>
@@ -350,21 +351,63 @@ const NgoDashboard = () => {
   );
 };
 
+/* ─── Volunteer Dashboard ─────────────────────────────── */
+const VolunteerDashboard = () => {
+  return (
+    <div className="space-y-6 animate-slide-up">
+      <div className="rounded-2xl p-6 relative overflow-hidden bg-gradient-to-br from-primary to-primary-foreground text-black">
+        <p className="text-xs font-black uppercase tracking-widest opacity-70 mb-1">Impact Points</p>
+        <div className="flex items-baseline gap-2">
+          <span className="text-5xl font-black italic tracking-tighter">4,820</span>
+          <span className="text-lg font-bold">XP</span>
+        </div>
+        <div className="mt-4 flex gap-2">
+          <span className="bg-black/10 text-black text-[10px] font-black px-3 py-1 rounded-full uppercase">Level 14</span>
+          <span className="bg-black/10 text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Top 5% Rescuer</span>
+        </div>
+        <div className="absolute -top-6 -right-6 w-32 h-32 rounded-full bg-black/5 blur-xl pointer-events-none" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <StatCard title="Deliveries Done" value="124" icon={CheckCircle2} trend={12} trendLabel="this week" iconBg="bg-green-500/15" />
+        <StatCard title="Food Saved" value="540kg" icon={HandHeart} iconBg="bg-blue-500/15" />
+      </div>
+
+      <div className="rounded-2xl border border-dashed border-white/20 p-8 text-center bg-white/5">
+        <Truck className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+        <h3 className="text-lg font-bold text-white mb-1">Ready for a mission?</h3>
+        <p className="text-sm text-muted-foreground mb-6">Nearby NGOs need help delivering food. Accept a task to start tracking.</p>
+        <Button className="w-full h-12 rounded-xl font-black uppercase tracking-widest">Find Missions Nearby</Button>
+      </div>
+    </div>
+  );
+};
+
 import { useSearchParams } from 'next/navigation';
 
 export default function DashboardPage() {
   const searchParams = useSearchParams();
   const role = (searchParams.get('role') as UserRole) || 'donor';
 
+  const renderDashboard = () => {
+    switch (role) {
+      case 'volunteer': return <VolunteerDashboard />;
+      case 'ngo': return <NgoDashboard />;
+      default: return <DonorDashboard />;
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 max-w-7xl">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-foreground">
-            {role === 'donor' ? 'Donor Dashboard' : 'Receiver Dashboard'}
+            {role.charAt(0).toUpperCase() + role.slice(1)} Dashboard
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {role === 'donor' ? 'Your food rescue impact at a glance.' : 'Find and claim food donations near you.'}
+            {role === 'volunteer' ? 'Track your active missions and impact.' : 
+             role === 'donor' ? 'Your food rescue impact at a glance.' : 
+             'Find and claim food donations near you.'}
           </p>
         </div>
         <Link href={`/alerts?role=${role}`} className="flex items-center gap-1.5 text-xs font-bold text-red-400 border border-red-500/30 rounded-xl px-3 py-2 bg-red-500/10 hover:bg-red-500/20 transition">
@@ -375,7 +418,10 @@ export default function DashboardPage() {
       {/* Emergency Alerts Banner - visible to all */}
       <ActiveAlertsBanner role={role} />
 
-      {role === 'donor' ? <DonorDashboard /> : <NgoDashboard />}
+      {/* Live Delivery Tracking Section */}
+      <ActiveDeliveriesDashboard role={role} />
+
+      {renderDashboard()}
 
       {/* Floating SOS button on mobile */}
       <EmergencyButton variant="fab" />
