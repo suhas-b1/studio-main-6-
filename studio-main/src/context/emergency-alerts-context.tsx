@@ -117,18 +117,21 @@ export const EmergencyAlertsProvider = ({ children }: { children: ReactNode }) =
 
 
     try {
-      await addDoc(collection(firestore, 'emergency_alerts'), {
+      const alertData: any = {
         creator_id: user.uid,
         creator_name: user.displayName || user.email || 'Anonymous',
         priority: data.priority,
         description: data.description,
         location: data.location,
-        latitude: data.latitude,
-        longitude: data.longitude,
         status: 'open',
-        voice_transcript: data.voiceTranscript,
+        voice_transcript: data.voiceTranscript || '',
         created_at: serverTimestamp(),
-      });
+      };
+
+      if (data.latitude !== undefined) alertData.latitude = data.latitude;
+      if (data.longitude !== undefined) alertData.longitude = data.longitude;
+
+      await addDoc(collection(firestore, 'emergency_alerts'), alertData);
       return true;
     } catch (err) {
       console.error('Firestore insert failed:', err);

@@ -135,7 +135,7 @@ export function EmergencyAlertDialog({ open, onClose }: EmergencyAlertDialogProp
       } else if (err.message?.startsWith('DUPLICATE')) {
         toast({ variant: 'destructive', title: 'Duplicate alert', description: 'Wait 10 seconds before submitting from the same location again.' });
       } else {
-        toast({ variant: 'destructive', title: 'Failed to send alert', description: 'Please try again.' });
+        toast({ variant: 'destructive', title: 'Failed to send alert', description: err.message || 'Please try again.' });
       }
     } finally {
       setIsSubmitting(false);
