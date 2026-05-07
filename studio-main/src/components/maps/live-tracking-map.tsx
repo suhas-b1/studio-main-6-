@@ -41,7 +41,7 @@ const ngoIcon = L.divIcon({
     iconAnchor: [8, 8],
 });
 
-export default function LiveTrackingMap() {
+export default function LiveTrackingMap({ currentStatus }: { currentStatus: string }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<L.Map | null>(null);
     const partnerMarkerRef = useRef<L.Marker | null>(null);
@@ -61,16 +61,16 @@ export default function LiveTrackingMap() {
         });
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            className: 'map-tiles-grayscale' // We can add CSS for this
+            className: 'map-tiles-grayscale' 
         }).addTo(map);
 
         // Add Pickup point
         L.marker(donorPos, { icon: donorIcon }).addTo(map)
-            .bindTooltip("Renuka's Kitchen", { permanent: true, direction: 'top', className: 'map-tooltip' });
+            .bindTooltip("Pickup", { permanent: true, direction: 'top', className: 'map-tooltip' });
 
         // Add Delivery point
         L.marker(receiverPos, { icon: ngoIcon }).addTo(map)
-            .bindTooltip("You", { permanent: true, direction: 'top', className: 'map-tooltip' });
+            .bindTooltip("Dropoff", { permanent: true, direction: 'top', className: 'map-tooltip' });
 
         // Draw Route line
         L.polyline([donorPos, receiverPos], {
@@ -86,36 +86,62 @@ export default function LiveTrackingMap() {
 
         mapRef.current = map;
 
-        // Simulate movement
-        let frame = 0;
-        const totalFrames = 500;
-
-        const animate = () => {
-            if (!partnerMarkerRef.current) return;
-
-            frame = (frame + 1) % totalFrames;
-            const t = frame / totalFrames;
-
-            // Linear interpolation
-            const lat = donorPos[0] + (receiverPos[0] - donorPos[0]) * t;
-            const lng = donorPos[1] + (receiverPos[1] - donorPos[1]) * t;
-
-            partnerMarkerRef.current.setLatLng([lat, lng]);
-
-            // Slightly pan map to follow
-            // map.panTo([lat, lng], { animate: true, duration: 0.1 });
-
-            requestAnimationFrame(animate);
-        };
-
-        const animationId = requestAnimationFrame(animate);
-
         return () => {
-            cancelAnimationFrame(animationId);
             map.remove();
             mapRef.current = null;
         };
     }, []);
+
+    // Animate marker based on status
+    useEffect(() => {
+        if (!partnerMarkerRef.current || !mapRef.current) return;
+
+        let targetT = 0;
+        if (currentStatus === 'PENDING' || currentStatus === 'REACHED_PICKUP') {
+            targetT = 0.0;
+        } else if (currentStatus === 'PICKED_UP') {
+            targetT = 0.1;
+        } else if (currentStatus === 'ON_THE_WAY') {
+            targetT = 0.6;
+        } else if (currentStatus === 'NEAR_DESTINATION') {
+            targetT = 0.95;
+        } else if (currentStatus === 'DELIVERED') {
+            targetT = 1.0;
+        }
+
+        // We'll simulate a smooth pan to the targetT
+        // For a real app, this would use actual GPS coordinates from Supabase
+        const currentLatLng = partnerMarkerRef.current.getLatLng();
+        
+        const targetLat = donorPos[0] + (receiverPos[0] - donorPos[0]) * targetT;
+        const targetLng = donorPos[1] + (receiverPos[1] - donorPos[1]) * targetT;
+
+        const startLat = currentLatLng.lat;
+        const startLng = currentLatLng.lng;
+
+        let frame = 0;
+        const frames = 60; // 1 second animation at 60fps
+
+        const animate = () => {
+            frame++;
+            const t = frame / frames;
+            
+            // Ease out quad
+            const easeT = t * (2 - t);
+
+            const lat = startLat + (targetLat - startLat) * easeT;
+            const lng = startLng + (targetLng - startLng) * easeT;
+
+            partnerMarkerRef.current?.setLatLng([lat, lng]);
+
+            if (frame < frames) {
+                requestAnimationFrame(animate);
+            }
+        };
+
+        requestAnimationFrame(animate);
+
+    }, [currentStatus]);
 
     return (
         <>

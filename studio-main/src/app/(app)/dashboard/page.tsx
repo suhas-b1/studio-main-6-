@@ -260,12 +260,21 @@ const NgoDashboard = () => {
                 <div className="font-semibold text-sm text-foreground truncate">{d.title}</div>
                 <div className="text-xs text-muted-foreground mt-0.5">{d.quantity}</div>
               </div>
-              <span className={cn(
-                "text-[10px] font-bold px-2 py-0.5 rounded-full",
-                d.status === 'claimed' ? 'badge-claimed' : 'badge-completed'
-              )}>
-                {d.status === 'claimed' ? 'In Transit' : 'Pending'}
-              </span>
+              <div className="flex flex-col items-end gap-2">
+                <span className={cn(
+                  "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                  d.status === 'claimed' ? 'badge-claimed' : 'badge-completed'
+                )}>
+                  {d.status === 'claimed' ? 'In Transit' : 'Pending'}
+                </span>
+                {d.status === 'claimed' && (
+                  <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 rounded-full border-primary/50 text-primary hover:bg-primary/10" asChild>
+                    <Link href={`/tracker/${d.id}?role=ngo`}>
+                      Track Live
+                    </Link>
+                  </Button>
+                )}
+              </div>
             </div>
           ))}
           {claimedDonations.length === 0 && (
