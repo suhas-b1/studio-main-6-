@@ -149,7 +149,7 @@ export default function VolunteerLogisticsHub() {
             </h3>
           </div>
 
-          {selectedId ? (
+          {selectedId && myDeliveries.find(d => d.id === selectedId) ? (
             <div className="animate-in fade-in slide-in-from-right-4 duration-500">
               <VolunteerTrackingControls delivery={myDeliveries.find(d => d.id === selectedId)!} />
               
