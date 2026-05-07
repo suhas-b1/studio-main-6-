@@ -68,7 +68,7 @@ export function DeliveryAssignmentProvider({ children }: { children: ReactNode }
 
     const rawOptions = buildOptions(req, MOCK_VOLUNTEERS, MOCK_PARTNERS);
     const perfScores  = getPerformanceScores();
-    const scored      = scoreOptions(rawOptions, req.urgency, perfScores);
+    const scored      = scoreOptions(rawOptions, req, perfScores);
     const best        = autoSelect(scored);
 
     const log: HistoryEntry = {
@@ -76,7 +76,7 @@ export function DeliveryAssignmentProvider({ children }: { children: ReactNode }
       action:    'auto_scored',
       method:    best?.method,
       detail:    best
-        ? `Auto-selected "${best.label}" with score ${best.scores.total}`
+        ? `Auto-selected "${best.label}" with score ${best.scores.total}. ${best.reasoning}`
         : 'No available option found',
     };
 
@@ -93,7 +93,7 @@ export function DeliveryAssignmentProvider({ children }: { children: ReactNode }
     setAssignments(prev => [result, ...prev]);
     setIsProcessing(false);
 
-    // Auto-reassign if no response within 3 min (180,000ms — reduced to 10s for demo)
+    // Auto-reassign if no response (Escalation logic)
     if (best) scheduleReassign(req, result);
 
     return result;
@@ -110,24 +110,24 @@ export function DeliveryAssignmentProvider({ children }: { children: ReactNode }
     addLog(requestId, 'manual_accept', option.method, `Donor manually selected "${option.label}"`);
   }, [update]);
 
-  // ── Dynamic Reassignment ──────────────────────────────────────────────────
+  // ── Dynamic Reassignment (Auto Escalation) ────────────────────────────────
   const triggerReassign = useCallback(async (requestId: string) => {
     const assignment = assignments.find(a => a.requestId === requestId);
     if (!assignment) return;
 
     update(requestId, { status: 'reassigning' });
-    addLog(requestId, 'reassigning', undefined, 'No response — starting dynamic reassignment');
+    addLog(requestId, 'reassigning', undefined, 'No response — switching to faster/reliable alternative');
 
     await delay(600);
 
-    // Re-run scoring (volunteers/partners may have changed)
     const req = currentRequest;
     if (!req) return;
 
     const rawOptions = buildOptions(req, MOCK_VOLUNTEERS, MOCK_PARTNERS);
     const perfScores  = getPerformanceScores();
-    const scored      = scoreOptions(rawOptions, req.urgency, perfScores);
-    // Exclude the previously selected method on reassign
+    const scored      = scoreOptions(rawOptions, req, perfScores);
+    
+    // Switch logic: exclude previously failed method
     const filtered    = scored.filter(o => o.method !== assignment.selectedOption?.method);
     const next        = autoSelect(filtered.length ? filtered : scored);
 

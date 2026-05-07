@@ -1,6 +1,6 @@
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type DeliveryMethod = 'self_pickup' | 'volunteer_delivery' | 'partner_logistics';
+export type DeliveryMethod = 'self_pickup' | 'volunteer_delivery' | 'partner_logistics' | 'emergency_fast';
 export type UrgencyLevel   = 'critical' | 'high' | 'medium' | 'low';
 export type AssignmentStatus = 'pending' | 'scoring' | 'assigned' | 'reassigning' | 'failed';
 
@@ -21,6 +21,7 @@ export interface ScoringWeights {
   cost:         number;
   urgency:      number;
   availability: number;
+  expiry:       number;
 }
 
 export interface ScoredOption extends DeliveryOption {
@@ -29,11 +30,13 @@ export interface ScoredOption extends DeliveryOption {
     cost:         number;
     urgency:      number;
     availability: number;
+    expiry:       number;
     total:        number;
   };
   rank: number;
   recommended: boolean;
   reasoning: string;
+  futureSuggestion?: string; // e.g., "Drone Delivery Possible"
 }
 
 export interface AssignmentRequest {
@@ -46,8 +49,10 @@ export interface AssignmentRequest {
   receiverLng: number;
   urgency: UrgencyLevel;
   foodWeightKg: number;
-  pickupDeadlineMinutes: number;
+  pickupDeadlineMinutes: number; // Used as expiryMinutes
   requestedAt: Date;
+  isRemoteArea?: boolean;
+  isFloodZone?: boolean;
 }
 
 export interface AssignmentResult {
@@ -68,24 +73,25 @@ export interface HistoryEntry {
 }
 
 // ─── Urgency Config ───────────────────────────────────────────────────────────
-// Each urgency level specifies which weight profile to use
 export const URGENCY_WEIGHTS: Record<UrgencyLevel, ScoringWeights> = {
-  critical: { distance: 0.10, cost: 0.05, urgency: 0.70, availability: 0.15 },
-  high:     { distance: 0.20, cost: 0.15, urgency: 0.45, availability: 0.20 },
-  medium:   { distance: 0.30, cost: 0.30, urgency: 0.20, availability: 0.20 },
-  low:      { distance: 0.25, cost: 0.50, urgency: 0.05, availability: 0.20 },
+  critical: { distance: 0.05, cost: 0.05, urgency: 0.50, availability: 0.10, expiry: 0.30 },
+  high:     { distance: 0.15, cost: 0.10, urgency: 0.40, availability: 0.15, expiry: 0.20 },
+  medium:   { distance: 0.25, cost: 0.25, urgency: 0.20, availability: 0.15, expiry: 0.15 },
+  low:      { distance: 0.25, cost: 0.50, urgency: 0.05, availability: 0.15, expiry: 0.05 },
 };
 
-// ─── Method Speed Scores (how fast each method is) ───────────────────────────
+// ─── Method Speed Scores (0-1) ────────────────────────────────────────────────
 export const METHOD_SPEED_SCORE: Record<DeliveryMethod, number> = {
-  self_pickup:         0.5,   // medium — receiver travels
-  volunteer_delivery:  0.85,  // fast   — dedicated volunteer
-  partner_logistics:   0.70,  // good   — third-party partner
+  self_pickup:         0.5,
+  volunteer_delivery:  0.85,
+  partner_logistics:   0.70,
+  emergency_fast:      0.95,
 };
 
 // ─── Base Cost Per KM (₹) ────────────────────────────────────────────────────
 export const METHOD_BASE_COST: Record<DeliveryMethod, number> = {
-  self_pickup:         0,     // free for the system
-  volunteer_delivery:  8,     // ₹8/km fuel reimbursement
-  partner_logistics:   14,    // ₹14/km partner rate
+  self_pickup:         0,
+  volunteer_delivery:  8,
+  partner_logistics:   14,
+  emergency_fast:      25,
 };

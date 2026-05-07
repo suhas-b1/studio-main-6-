@@ -8,12 +8,14 @@ const METHOD_ICONS: Record<DeliveryMethod, string> = {
   self_pickup:         '🚶',
   volunteer_delivery:  '🛵',
   partner_logistics:   '🚚',
+  emergency_fast:      '⚡',
 };
 
 const METHOD_COLORS: Record<DeliveryMethod, { ring: string; badge: string; glow: string }> = {
   self_pickup:        { ring: 'border-blue-500/40',   badge: 'bg-blue-500/20 text-blue-400',   glow: 'shadow-blue-500/10'   },
   volunteer_delivery: { ring: 'border-primary/40',    badge: 'bg-primary/20 text-primary',      glow: 'shadow-primary/10'    },
   partner_logistics:  { ring: 'border-purple-500/40', badge: 'bg-purple-500/20 text-purple-400',glow: 'shadow-purple-500/10' },
+  emergency_fast:     { ring: 'border-red-500/40',    badge: 'bg-red-500/20 text-red-400',      glow: 'shadow-red-500/10'    },
 };
 
 interface OptionCardProps {
@@ -35,7 +37,7 @@ export function OptionCard({ option, onAccept, compact }: OptionCardProps) {
       {/* Recommended badge */}
       {option.recommended && (
         <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-primary text-black px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
-          <Star className="h-3 w-3" /> AI Pick
+          <Star className="h-3 w-3" /> AI Smart Pick
         </div>
       )}
 
@@ -43,6 +45,16 @@ export function OptionCard({ option, onAccept, compact }: OptionCardProps) {
       {!option.isAvailable && (
         <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-white/10 text-muted-foreground px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
           <AlertCircle className="h-3 w-3" /> Unavailable
+        </div>
+      )}
+
+      {/* Future Suggestion */}
+      {option.futureSuggestion && (
+        <div className="mb-4 bg-primary/10 border border-primary/20 rounded-2xl p-3 flex items-start gap-3 animate-pulse">
+          <Zap className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+          <p className="text-[10px] font-black text-primary uppercase tracking-wider leading-relaxed">
+            {option.futureSuggestion}
+          </p>
         </div>
       )}
 
@@ -71,19 +83,19 @@ export function OptionCard({ option, onAccept, compact }: OptionCardProps) {
 
       {/* Score bars */}
       {!compact && (
-        <div className="space-y-2 mb-4">
+        <div className="space-y-2 mb-4 bg-white/2 rounded-2xl p-3">
           <ScoreBar label="Distance" value={option.scores.distance} color="bg-blue-500" />
           <ScoreBar label="Cost"     value={option.scores.cost}     color="bg-green-500" />
-          <ScoreBar label="Speed"    value={option.scores.urgency}  color="bg-yellow-500" />
-          <ScoreBar label="Avail."   value={option.scores.availability} color="bg-purple-500" />
+          <ScoreBar label="Expiry"   value={option.scores.expiry}   color="bg-orange-500" />
+          <ScoreBar label="Reliab."  value={option.scores.availability} color="bg-purple-500" />
         </div>
       )}
 
       {/* Total score */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 px-1">
         <div className="flex items-center gap-2">
-          <Zap className="h-4 w-4 text-primary" />
-          <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">AI Score</span>
+          <Brain className="h-4 w-4 text-primary" />
+          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">AI Decision Score</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="h-2 w-24 rounded-full bg-white/5 overflow-hidden">
@@ -99,7 +111,7 @@ export function OptionCard({ option, onAccept, compact }: OptionCardProps) {
       {/* Reasoning */}
       {!compact && option.reasoning && (
         <p className="text-[11px] text-muted-foreground leading-relaxed bg-white/5 rounded-2xl px-4 py-3 mb-4 italic border border-white/5">
-          💡 {option.reasoning}
+          🤖 Reasoning: {option.reasoning}
         </p>
       )}
 
@@ -108,14 +120,14 @@ export function OptionCard({ option, onAccept, compact }: OptionCardProps) {
         <button
           onClick={() => onAccept(option)}
           className={cn(
-            'w-full py-3 rounded-2xl font-black text-sm uppercase tracking-widest transition-all',
+            'w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl',
             option.recommended
-              ? 'bg-primary text-black hover:bg-primary/90 shadow-lg'
+              ? 'bg-primary text-black hover:bg-primary/90 hover:scale-[1.02] active:scale-95'
               : 'bg-white/5 text-white border border-white/10 hover:bg-white/10',
           )}
         >
           <CheckCircle2 className="h-4 w-4 inline mr-2" />
-          {option.recommended ? 'Accept AI Recommendation' : 'Choose This Option'}
+          {option.recommended ? 'Accept Smart Assignment' : 'Choose This Option'}
         </button>
       )}
     </div>
@@ -135,11 +147,11 @@ function Metric({ icon, label, value, highlight }: { icon: React.ReactNode; labe
 function ScoreBar({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="text-[10px] text-muted-foreground w-14 uppercase font-bold tracking-widest">{label}</span>
-      <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+      <span className="text-[10px] text-muted-foreground w-14 uppercase font-bold tracking-widest text-left">{label}</span>
+      <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
         <div className={cn('h-full rounded-full transition-all duration-700', color)} style={{ width: `${value}%` }} />
       </div>
-      <span className="text-[10px] font-black text-white w-8 text-right">{value}</span>
+      <span className="text-[9px] font-black text-white w-6 text-right">{value}</span>
     </div>
   );
 }

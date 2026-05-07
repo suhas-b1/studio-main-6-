@@ -29,8 +29,12 @@ const DEMO_SCENARIOS = [
     req: { donationTitle: 'Cooked Meals (20 packs)', donorLat: 12.9716, donorLng: 77.5946, receiverLat: 12.9200, receiverLng: 77.6500, urgency: 'high' as UrgencyLevel, foodWeightKg: 15, pickupDeadlineMinutes: 60, donationId: 'd2' },
   },
   {
-    label: '🌆 Far Low Priority',
-    req: { donationTitle: 'Canned Goods (30 kg)', donorLat: 12.9716, donorLng: 77.5946, receiverLat: 12.8000, receiverLng: 77.7500, urgency: 'low' as UrgencyLevel, foodWeightKg: 30, pickupDeadlineMinutes: 180, donationId: 'd3' },
+    label: '🚁 Remote Area Delivery',
+    req: { donationTitle: 'Medicines (2 kg)', donorLat: 12.9716, donorLng: 77.5946, receiverLat: 13.5000, receiverLng: 78.0000, urgency: 'high' as UrgencyLevel, foodWeightKg: 2, pickupDeadlineMinutes: 120, donationId: 'd4', isRemoteArea: true },
+  },
+  {
+    label: '🌊 Flood Zone Emergency',
+    req: { donationTitle: 'Emergency Supplies', donorLat: 12.9716, donorLng: 77.5946, receiverLat: 12.9800, receiverLng: 77.6000, urgency: 'critical' as UrgencyLevel, foodWeightKg: 10, pickupDeadlineMinutes: 30, donationId: 'd5', isFloodZone: true },
   },
 ];
 
