@@ -8,30 +8,29 @@ import { formatDistanceToNow } from 'date-fns';
 import { calculateDistance } from '@/lib/distance';
 import { useEffect, useState, useRef } from 'react';
 
-// Simple Web Audio API Siren
+// Simple Web Audio API Siren (Alternating frequencies)
 function playSiren() {
   try {
     const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContext) return;
     const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
     
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(600, ctx.currentTime);
-    osc.frequency.linearRampToValueAtTime(1200, ctx.currentTime + 0.4);
-    osc.frequency.linearRampToValueAtTime(600, ctx.currentTime + 0.8);
-    
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.1);
-    gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.7);
-    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.8);
-    
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.8);
+    const playTone = (freq: number, start: number, duration: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+      gain.gain.setValueAtTime(0, ctx.currentTime + start);
+      gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + start + 0.05);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + start + duration);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + duration);
+    };
+
+    playTone(800, 0, 0.4);
+    playTone(600, 0.4, 0.4);
   } catch (e) {
     console.warn("Audio playback failed", e);
   }
@@ -40,46 +39,53 @@ function playSiren() {
 function GlobalSOSOverlay({ alert, onClose }: { alert: EmergencyAlert, onClose: () => void }) {
   useEffect(() => {
     playSiren();
-    const interval = setInterval(playSiren, 1000);
+    const interval = setInterval(playSiren, 800);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-red-950/90 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="text-center space-y-6 p-6 max-w-lg w-full animate-in zoom-in-95 duration-500">
-        <div className="relative mx-auto w-32 h-32 mb-8">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-red-950/95 backdrop-blur-xl animate-in fade-in duration-300">
+      {/* Background pulsing effect */}
+      <div className="absolute inset-0 bg-red-600/10 animate-[pulse_1s_infinite]" />
+      
+      <div className="relative text-center space-y-6 p-8 max-w-xl w-full animate-in zoom-in-95 slide-in-from-bottom-10 duration-500">
+        <div className="relative mx-auto w-40 h-40 mb-8">
           <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-75" />
-          <div className="relative flex items-center justify-center w-full h-full bg-red-600 rounded-full shadow-[0_0_60px_rgba(220,38,38,0.8)]">
-            <ShieldAlert className="w-16 h-16 text-white" />
+          <div className="absolute inset-[-20px] bg-red-500/20 rounded-full animate-pulse" />
+          <div className="relative flex items-center justify-center w-full h-full bg-gradient-to-br from-red-500 to-red-800 rounded-full shadow-[0_0_80px_rgba(220,38,38,1)] border-4 border-white/20">
+            <ShieldAlert className="w-20 h-20 text-white animate-bounce" />
           </div>
         </div>
         
-        <h1 className="text-5xl md:text-6xl font-black text-white uppercase tracking-widest drop-shadow-2xl">
-          SOS ALERT
-        </h1>
+        <div className="space-y-2">
+          <h1 className="text-6xl md:text-7xl font-black text-white uppercase tracking-tighter drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] italic">
+            SOS ALERT
+          </h1>
+          <div className="h-1.5 w-32 bg-red-500 mx-auto rounded-full animate-pulse" />
+        </div>
         
-        <div className="bg-black/40 p-6 rounded-3xl border border-red-500/30 backdrop-blur-xl">
-          <p className="text-lg md:text-xl text-white font-medium leading-relaxed mb-4">
-            {alert.description}
+        <div className="bg-black/60 p-8 rounded-[2rem] border-2 border-red-500/50 backdrop-blur-2xl shadow-2xl transform -rotate-1">
+          <p className="text-xl md:text-2xl text-white font-black leading-tight mb-6">
+            "{alert.description}"
           </p>
-          <div className="flex items-center justify-center gap-2 text-red-200 bg-red-900/40 py-2 px-4 rounded-xl inline-flex mx-auto">
-            <MapPin className="h-5 w-5" />
-            <span className="font-bold">{alert.location}</span>
+          <div className="flex items-center justify-center gap-3 text-red-100 bg-red-600/40 py-3 px-6 rounded-2xl inline-flex mx-auto border border-red-500/30">
+            <MapPin className="h-6 w-6 animate-bounce" />
+            <span className="font-black text-lg tracking-tight uppercase">{alert.location}</span>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
           <button 
             onClick={onClose} 
-            className="px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition"
+            className="px-8 py-5 rounded-2xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition active:scale-95"
           >
-            Dismiss
+            Dismiss Alert
           </button>
           <a 
             href={`/alerts?role=donor&focus=${alert.id}`} 
-            className="px-8 py-4 rounded-2xl bg-red-600 text-white font-black text-lg hover:bg-red-500 hover:scale-105 transition-all shadow-[0_0_40px_rgba(220,38,38,0.4)]"
+            className="px-10 py-5 rounded-2xl bg-red-600 text-white font-black text-xl hover:bg-red-500 hover:scale-105 transition-all shadow-[0_20px_50px_rgba(220,38,38,0.6)] border-b-4 border-red-800 active:border-b-0 active:translate-y-1"
           >
-            Show Details & Map
+            RESPOND IMMEDIATELY
           </a>
         </div>
       </div>
