@@ -322,28 +322,14 @@ export function NewDonationForm() {
                         <FormField control={form.control} name="cookedTime" render={({ field }) => (
                             <FormItem className="flex flex-col">
                                 <FormLabel className={labelCls}>When was this prepared?</FormLabel>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <FormControl>
-                                            <button
-                                                type="button"
-                                                className={cn(inputCls, 'flex items-center justify-between text-left', !field.value && 'text-muted-foreground')}
-                                            >
-                                                {field.value ? format(field.value, 'PPP p') : 'Pick preparation time'}
-                                                <CalendarIcon className="h-4 w-4 opacity-50 flex-shrink-0" />
-                                            </button>
-                                        </FormControl>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar
-                                            mode="single"
-                                            selected={field.value}
-                                            onSelect={field.onChange}
-                                            disabled={d => d > new Date()}
-                                            initialFocus
-                                        />
-                                    </PopoverContent>
-                                </Popover>
+                                <FormControl>
+                                    <input 
+                                        type="datetime-local" 
+                                        className={cn(inputCls, 'w-full')}
+                                        value={field.value ? format(field.value, "yyyy-MM-dd'T'HH:mm") : ''}
+                                        onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
+                                    />
+                                </FormControl>
                                 <FormDescription className="text-xs text-muted-foreground">
                                     The system will auto-calculate safe expiry based on the food type and this time.
                                 </FormDescription>
