@@ -72,25 +72,27 @@ export function TrackingEngineProvider({ children }: { children: ReactNode }) {
       if (!snap.exists()) return;
       const d = snap.data();
 
-      const newLat: number = d.current_lat ?? d.pickup_lat;
-      const newLng: number = d.current_lng ?? d.pickup_lng;
+      const newLat: number = d.current_lat ?? d.pickup_lat ?? 0;
+      const newLng: number = d.current_lng ?? d.pickup_lng ?? 0;
 
       // Sanity check
       const prev = prevPositions.current[deliveryId];
-      if (prev) {
+      if (prev && newLat && newLng) {
         const elapsed = (Date.now() - prev.ts) / 1000;
-        if (!isSaneMovement(prev.lat, prev.lng, newLat, newLng, elapsed)) {
+        if (elapsed > 1 && !isSaneMovement(prev.lat, prev.lng, newLat, newLng, elapsed)) {
           console.warn(`[TrackingEngine] Rejected impossible GPS jump on ${deliveryId}`);
           return;
         }
       }
-      prevPositions.current[deliveryId] = { lat: newLat, lng: newLng, ts: Date.now() };
+      
+      if (newLat && newLng) {
+        prevPositions.current[deliveryId] = { lat: newLat, lng: newLng, ts: Date.now() };
+      }
 
       // ETA
-      const { minutes: etaMins, label: etaLabel } = estimateETA(
-        newLat, newLng,
-        d.dest_lat, d.dest_lng
-      );
+      const { minutes: etaMins, label: etaLabel } = (newLat && newLng && d.dest_lat && d.dest_lng)
+        ? estimateETA(newLat, newLng, d.dest_lat, d.dest_lng)
+        : { minutes: 0, label: 'Calculating...' };
 
       // Safety check
       const freshMins = FOOD_FRESH_MINUTES[d.status] ?? null;
@@ -101,31 +103,33 @@ export function TrackingEngineProvider({ children }: { children: ReactNode }) {
 
       // Speed estimate
       let speedKmh = 0;
-      if (prev) {
+      if (prev && newLat && newLng) {
         const dist = haversineKm(prev.lat, prev.lng, newLat, newLng);
         const hrs = (Date.now() - prev.ts) / 3_600_000;
         speedKmh = hrs > 0 ? Math.round(dist / hrs) : 0;
       }
 
-      const distanceRemaining = haversineKm(newLat, newLng, d.dest_lat, d.dest_lng);
+      const distanceRemaining = (newLat && newLng && d.dest_lat && d.dest_lng)
+        ? haversineKm(newLat, newLng, d.dest_lat, d.dest_lng)
+        : 0;
 
       const delivery: DeliveryTracking = {
         id: snap.id,
-        donationId: d.donation_id,
-        volunteerId: d.volunteer_id,
-        volunteerName: d.volunteer_name,
-        receiverId: d.receiver_id,
-        status: d.status,
+        donationId: d.donation_id || '',
+        volunteerId: d.volunteer_id || '',
+        volunteerName: d.volunteer_name || 'Anonymous',
+        receiverId: d.receiver_id || '',
+        status: d.status || 'pending',
         currentLat: newLat,
         currentLng: newLng,
-        pickupLat: d.pickup_lat,
-        pickupLng: d.pickup_lng,
-        destLat: d.dest_lat,
-        destLng: d.dest_lng,
+        pickupLat: d.pickup_lat || 0,
+        pickupLng: d.pickup_lng || 0,
+        destLat: d.dest_lat || 0,
+        destLng: d.dest_lng || 0,
         eta: etaLabel,
         polyline: d.polyline,
-        lastLocationUpdate: d.last_location_update?.toDate(),
-        startedAt: d.started_at?.toDate() ?? new Date(),
+        lastLocationUpdate: d.last_location_update?.toDate?.() || new Date(),
+        startedAt: d.started_at?.toDate?.() || new Date(),
       };
 
       setStates(prev => {
@@ -134,7 +138,6 @@ export function TrackingEngineProvider({ children }: { children: ReactNode }) {
           ...prev,
           [deliveryId]: {
             ...delivery,
-            // Start smooth pos from previous if exists, else jump to current
             smoothLat: current?.smoothLat ?? newLat,
             smoothLng: current?.smoothLng ?? newLng,
             etaMinutes: etaMins,

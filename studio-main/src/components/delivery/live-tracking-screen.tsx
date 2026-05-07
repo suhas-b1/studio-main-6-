@@ -14,7 +14,8 @@ import {
   MapPin,
   CheckCircle2,
   Package,
-  AlertCircle
+  AlertCircle,
+  Flag
 } from 'lucide-react';
 import PremiumTrackingMap from './premium-tracking-map';
 import { buildGoogleMapsUrl } from '@/lib/tracking/geo-utils';
