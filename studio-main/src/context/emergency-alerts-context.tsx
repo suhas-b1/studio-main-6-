@@ -55,7 +55,7 @@ function checkRateLimit(userId: string): boolean {
   if (stored) {
     const timestamps: number[] = JSON.parse(stored);
     const recent = timestamps.filter(t => now - t < oneHour);
-    if (recent.length >= 3) return false;
+    if (recent.length >= 30) return false;
     localStorage.setItem(key, JSON.stringify([...recent, now]));
   } else {
     localStorage.setItem(key, JSON.stringify([now]));
@@ -68,11 +68,11 @@ function isFakeAlert(location: string, userId: string): boolean {
   const key = `alert_locs_${userId}`;
   const stored = localStorage.getItem(key);
   const now = Date.now();
-  const tenMins = 10 * 60 * 1000;
+  const tenSeconds = 10 * 1000;
 
   if (stored) {
     const entries: { loc: string; time: number }[] = JSON.parse(stored);
-    const recent = entries.filter(e => now - e.time < tenMins);
+    const recent = entries.filter(e => now - e.time < tenSeconds);
     if (recent.some(e => e.loc === location)) return true;
     localStorage.setItem(key, JSON.stringify([...recent, { loc: location, time: now }]));
   } else {

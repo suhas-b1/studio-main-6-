@@ -131,9 +131,9 @@ export function EmergencyAlertDialog({ open, onClose }: EmergencyAlertDialogProp
       setVoiceTranscript('');
     } catch (err: any) {
       if (err.message?.startsWith('RATE_LIMIT')) {
-        toast({ variant: 'destructive', title: 'Too many alerts', description: 'You can submit at most 3 alerts per hour.' });
+        toast({ variant: 'destructive', title: 'Too many alerts', description: 'You can submit at most 30 alerts per hour for testing.' });
       } else if (err.message?.startsWith('DUPLICATE')) {
-        toast({ variant: 'destructive', title: 'Duplicate alert', description: 'An alert from this location was already submitted recently.' });
+        toast({ variant: 'destructive', title: 'Duplicate alert', description: 'Wait 10 seconds before submitting from the same location again.' });
       } else {
         toast({ variant: 'destructive', title: 'Failed to send alert', description: 'Please try again.' });
       }
