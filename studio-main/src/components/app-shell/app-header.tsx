@@ -37,7 +37,7 @@ export function AppHeader({ role }: { role: UserRole }) {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href={`/dashboard?role=${role}`}>{role === 'donor' ? 'Donor Dashboard' : 'Receiver Dashboard'}</Link>
+                <Link href={`/dashboard?role=${role}`}>Nourish Connect</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             {segments.map((segment, index) => {
