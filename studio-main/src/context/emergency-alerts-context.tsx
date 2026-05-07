@@ -45,41 +45,7 @@ interface EmergencyAlertsContextType {
 
 const EmergencyAlertsContext = createContext<EmergencyAlertsContextType | undefined>(undefined);
 
-// Rate limiting: max 3 alerts per hour per user (stored in localStorage)
-function checkRateLimit(userId: string): boolean {
-  const key = `alert_rate_${userId}`;
-  const stored = localStorage.getItem(key);
-  const now = Date.now();
-  const oneHour = 60 * 60 * 1000;
 
-  if (stored) {
-    const timestamps: number[] = JSON.parse(stored);
-    const recent = timestamps.filter(t => now - t < oneHour);
-    if (recent.length >= 30) return false;
-    localStorage.setItem(key, JSON.stringify([...recent, now]));
-  } else {
-    localStorage.setItem(key, JSON.stringify([now]));
-  }
-  return true;
-}
-
-// Fake alert detection: check if identical location submitted recently
-function isFakeAlert(location: string, userId: string): boolean {
-  const key = `alert_locs_${userId}`;
-  const stored = localStorage.getItem(key);
-  const now = Date.now();
-  const tenSeconds = 10 * 1000;
-
-  if (stored) {
-    const entries: { loc: string; time: number }[] = JSON.parse(stored);
-    const recent = entries.filter(e => now - e.time < tenSeconds);
-    if (recent.some(e => e.loc === location)) return true;
-    localStorage.setItem(key, JSON.stringify([...recent, { loc: location, time: now }]));
-  } else {
-    localStorage.setItem(key, JSON.stringify([{ loc: location, time: now }]));
-  }
-  return false;
-}
 
 // Escalation: auto-escalate alerts older than 10 mins with no response
 function autoEscalate(alerts: EmergencyAlert[]): EmergencyAlert[] {
@@ -147,13 +113,8 @@ export const EmergencyAlertsProvider = ({ children }: { children: ReactNode }) =
   const createAlert = async (data: Omit<EmergencyAlert, 'id' | 'creatorId' | 'creatorName' | 'status' | 'createdAt'>): Promise<boolean> => {
     if (!user) return false;
 
-    // Fake alert & rate limit checks
-    if (!checkRateLimit(user.uid)) {
-      throw new Error('RATE_LIMIT: You can only submit 3 alerts per hour. Please wait before submitting again.');
-    }
-    if (isFakeAlert(data.location, user.uid)) {
-      throw new Error('DUPLICATE: A similar alert from this location was submitted recently.');
-    }
+    // All limits removed per user request
+
 
     try {
       await addDoc(collection(firestore, 'emergency_alerts'), {
