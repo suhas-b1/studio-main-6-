@@ -25,21 +25,11 @@ const schema = z.object({
     description: z.string().min(10, 'Description must be at least 10 characters.'),
     quantity: z.string().min(1, 'Please specify the quantity.'),
     type: z.enum(['Produce', 'Baked Goods', 'Canned Goods', 'Prepared Meal', 'Dairy', 'Pantry']),
-    cookedTime: z.date({ required_error: 'Please specify when the food was prepared/cooked.' }).optional().default(() => new Date()),
+    pickupDeadline: z.date({ required_error: 'Please set the last date and time this food can be collected.' }),
     location: z.string().min(5, 'Please provide a pickup location.'),
     image: z.any().optional(),
     imageHint: z.string().optional(),
 });
-
-// Configurable food expiry rules (hours from cooked time)
-const FOOD_EXPIRY_RULES: Record<string, number> = {
-    'Prepared Meal': 4,
-    'Dairy': 2,
-    'Baked Goods': 24,
-    'Produce': 48,
-    'Canned Goods': 720, // 30 days
-    'Pantry': 720,
-};
 
 /* ── Shared field styles ──────────────────────────────── */
 const inputCls =
@@ -60,7 +50,7 @@ export function NewDonationForm() {
 
     const form = useForm<z.infer<typeof schema>>({
         resolver: zodResolver(schema),
-        defaultValues: { title: '', description: '', quantity: '', type: 'Prepared Meal', cookedTime: new Date(), location: (user as any)?.address || '' },
+        defaultValues: { title: '', description: '', quantity: '', type: 'Prepared Meal', location: (user as any)?.address || '' },
     });
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,14 +118,10 @@ export function NewDonationForm() {
     function onSubmit(values: z.infer<typeof schema>) {
         if (!user) { toast({ variant: 'destructive', title: 'You must be logged in to donate.' }); return; }
 
-        // Food Expiry Engine: Auto-calculate expiry based on configurable rules
-        const safeHours = FOOD_EXPIRY_RULES[values.type] || 4;
-        const autoExpiryTime = new Date((values.cookedTime || new Date()).getTime() + safeHours * 60 * 60 * 1000);
-
         addDonation({
             id: `donation-${Date.now()}`,
             ...values,
-            pickupDeadline: autoExpiryTime,
+            pickupDeadline: values.pickupDeadline,
             imageUrl: imagePreview || 'https://placehold.co/600x400',
             imageHint: values.imageHint || 'food',
             donorId: user.uid,
@@ -318,22 +304,22 @@ export function NewDonationForm() {
                             <p className="text-xs text-muted-foreground mt-0.5">Provide details for where and when the food can be collected.</p>
                         </div>
 
-                        {/* Cooked/Prepared Time */}
-                        <FormField control={form.control} name="cookedTime" render={({ field }) => (
+                        {/* Pickup Deadline — manually set by donor */}
+                        <FormField control={form.control} name="pickupDeadline" render={({ field }) => (
                             <FormItem className="flex flex-col">
-                                <FormLabel className={labelCls}>When was this prepared?</FormLabel>
+                                <FormLabel className={labelCls}>Pickup Deadline <span className="text-primary">*</span></FormLabel>
+                                <p className="text-xs text-muted-foreground -mt-1">Set the last date &amp; time receivers can collect this food.</p>
                                 <div className="flex gap-2">
+                                    {/* Date picker */}
                                     <Popover>
                                         <PopoverTrigger asChild>
-                                            <FormControl>
-                                                <button
-                                                    type="button"
-                                                    className={cn(inputCls, 'flex-1 flex items-center justify-between text-left', !field.value && 'text-muted-foreground')}
-                                                >
-                                                    {field.value ? format(field.value, 'PPP') : 'Pick Date'}
-                                                    <CalendarIcon className="h-4 w-4 opacity-50 flex-shrink-0" />
-                                                </button>
-                                            </FormControl>
+                                            <button
+                                                type="button"
+                                                className={cn(inputCls, 'flex-1 flex items-center justify-between text-left', !field.value && 'text-muted-foreground')}
+                                            >
+                                                {field.value ? format(field.value, 'PPP') : 'Select Date'}
+                                                <CalendarIcon className="h-4 w-4 opacity-50 flex-shrink-0" />
+                                            </button>
                                         </PopoverTrigger>
                                         <PopoverContent className="w-auto p-0" align="start">
                                             <Calendar
@@ -341,36 +327,44 @@ export function NewDonationForm() {
                                                 selected={field.value}
                                                 onSelect={(date) => {
                                                     if (!date) return;
-                                                    // Preserve existing time
+                                                    // Preserve time when changing date
                                                     const current = field.value || new Date();
                                                     date.setHours(current.getHours());
                                                     date.setMinutes(current.getMinutes());
+                                                    date.setSeconds(0);
                                                     field.onChange(date);
                                                 }}
                                                 initialFocus
                                             />
                                         </PopoverContent>
                                     </Popover>
-                                    <FormControl>
-                                        <input
-                                            type="time"
-                                            className={cn(inputCls, 'w-32')}
-                                            value={field.value ? format(field.value, 'HH:mm') : '12:00'}
-                                            onChange={(e) => {
-                                                const timeStr = e.target.value;
-                                                if (!timeStr) return;
-                                                const [hours, minutes] = timeStr.split(':').map(Number);
-                                                const newDate = field.value ? new Date(field.value) : new Date();
-                                                newDate.setHours(hours);
-                                                newDate.setMinutes(minutes);
-                                                field.onChange(newDate);
-                                            }}
-                                        />
-                                    </FormControl>
+
+                                    {/* Time picker */}
+                                    <input
+                                        type="time"
+                                        className={cn(inputCls, 'w-32 cursor-pointer')}
+                                        value={field.value ? format(field.value, 'HH:mm') : ''}
+                                        placeholder="HH:MM"
+                                        onChange={(e) => {
+                                            const timeStr = e.target.value;
+                                            if (!timeStr) return;
+                                            const [hours, minutes] = timeStr.split(':').map(Number);
+                                            const newDate = field.value ? new Date(field.value) : new Date();
+                                            newDate.setHours(hours);
+                                            newDate.setMinutes(minutes);
+                                            newDate.setSeconds(0);
+                                            field.onChange(newDate);
+                                        }}
+                                    />
                                 </div>
-                                <FormDescription className="text-xs text-muted-foreground">
-                                    The system will auto-calculate safe expiry based on the food type and this time.
-                                </FormDescription>
+
+                                {/* Live preview of selected deadline */}
+                                {field.value && (
+                                    <div className="flex items-center gap-2 text-xs mt-1 text-primary font-semibold">
+                                        <CalendarIcon className="h-3 w-3" />
+                                        Deadline set to: {format(field.value, 'PPP')} at {format(field.value, 'hh:mm a')}
+                                    </div>
+                                )}
                                 <FormMessage />
                             </FormItem>
                         )} />
