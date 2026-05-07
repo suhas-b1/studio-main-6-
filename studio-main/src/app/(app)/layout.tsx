@@ -11,6 +11,7 @@ import { AppShell } from '@/components/app-shell/app-shell';
 import { DonationsProvider } from '@/context/donations-context';
 import { EmergencyAlertsProvider } from '@/context/emergency-alerts-context';
 import { DeliveryProvider } from '@/context/delivery-context';
+import { TrackingEngineProvider } from '@/context/tracking-engine-context';
 import dynamic from 'next/dynamic';
 import type { UserRole } from '@/lib/types';
 
@@ -72,19 +73,21 @@ function AppLayoutContent({ children }: { children: ReactNode }) {
     <EmergencyAlertsProvider>
       <DonationsProvider>
         <DeliveryProvider>
-          <AppShell role={role} user={user}>
-            <Suspense fallback={
-              <div className="flex h-full items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                  <Logo />
-                  <p>Loading page...</p>
+          <TrackingEngineProvider>
+            <AppShell role={role} user={user}>
+              <Suspense fallback={
+                <div className="flex h-full items-center justify-center">
+                  <div className="flex flex-col items-center gap-4">
+                    <Logo />
+                    <p>Loading page...</p>
+                  </div>
                 </div>
-              </div>
-            }>
-              {children}
-            </Suspense>
-          </AppShell>
-          <AiBot />
+              }>
+                {children}
+              </Suspense>
+            </AppShell>
+            <AiBot />
+          </TrackingEngineProvider>
         </DeliveryProvider>
       </DonationsProvider>
     </EmergencyAlertsProvider>
