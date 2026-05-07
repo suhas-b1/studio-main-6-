@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { ShieldAlert, MapPin, Clock, Filter, RefreshCw } from 'lucide-react';
-import { useEmergencyAlerts, AlertPriority } from '@/context/emergency-alerts-context';
+import { useEmergencyAlerts, AlertPriority, EmergencyAlert } from '@/context/emergency-alerts-context';
 import { EmergencyButton } from '@/components/emergency/emergency-button';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -28,12 +28,14 @@ export default function AlertsPage() {
   const { activeAlerts, respondToAlert, closeAlert, isLoading } = useEmergencyAlerts();
   const searchParams = useSearchParams();
   const role = searchParams.get('role') || 'donor';
+  const [filter, setFilter] = useState<AlertPriority | 'all'>('all');
+
   const filtered = filter === 'all' ? activeAlerts : activeAlerts.filter(a => a.priority === filter);
   const focusId = searchParams.get('focus');
 
   // If a specific alert is focused, ensure it's in the filtered list
   const displayAlerts = focusId && !filtered.find(a => a.id === focusId)
-    ? [activeAlerts.find(a => a.id === focusId)!, ...filtered].filter(Boolean)
+    ? ([activeAlerts.find(a => a.id === focusId), ...filtered].filter(Boolean) as EmergencyAlert[])
     : filtered;
 
   return (
@@ -100,7 +102,7 @@ export default function AlertsPage() {
             </div>
           )}
 
-          {!isLoading && filtered.length === 0 && (
+          {!isLoading && displayAlerts.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="h-16 w-16 rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center justify-center mb-4">
                 <ShieldAlert className="h-8 w-8 text-green-400" />

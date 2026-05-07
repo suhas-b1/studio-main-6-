@@ -53,13 +53,13 @@ export function EmergencyButton({ className, variant = 'fab' }: EmergencyButtonP
         <span className="text-[9px] font-black text-white mt-0.5">SOS</span>
       </button>
 
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes sos-pulse {
           0% { box-shadow: 0 0 0 0 rgba(220,38,38,0.7), 0 8px 30px rgba(220,38,38,0.4); }
           70% { box-shadow: 0 0 0 16px rgba(220,38,38,0), 0 8px 30px rgba(220,38,38,0.4); }
           100% { box-shadow: 0 0 0 0 rgba(220,38,38,0), 0 8px 30px rgba(220,38,38,0.4); }
         }
-      `}</style>
+      `}} />
 
       <EmergencyAlertDialog open={open} onClose={() => setOpen(false)} />
     </>

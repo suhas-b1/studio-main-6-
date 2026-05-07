@@ -1,6 +1,4 @@
-
 'use client';
-import { use } from 'react';
 import { HandHeart, HeartPulse, Leaf, Package, Truck, Users, ArrowRight, Clock, CheckCircle2, Circle, MapPin, Zap } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { mockDonations, impactStats } from '@/lib/mock-data';
@@ -12,6 +10,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ActiveAlertsBanner } from '@/components/emergency/active-alerts-banner';
 import { EmergencyButton } from '@/components/emergency/emergency-button';
+import { useEmergencyAlerts } from '@/context/emergency-alerts-context';
 
 /* ─── small helpers ─────────────────────────────────────── */
 const BAR_DATA = [38, 55, 42, 70, 63, 85, 100]; // last 7 days, % of max
@@ -81,7 +80,7 @@ function EmergencyHighlights() {
   );
 }
 
-import { useEmergencyAlerts } from '@/context/emergency-alerts-context';
+
 const DonorDashboard = () => {
   const myDonations = mockDonations.filter(d => d.donorId === 'user-donor-1' || d.donorId === 'user-donor-2');
   const activeListings = myDonations.filter(d => d.status === 'available');
