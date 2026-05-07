@@ -2,13 +2,14 @@
 'use client';
 import Image from "next/image";
 import { formatDistanceToNow } from 'date-fns';
-import { MapPin, Clock, Award, XCircle, HeartHandshake, Zap, Package, Leaf } from "lucide-react";
+import { MapPin, Clock, Award, XCircle, HeartHandshake, Zap, Package, Leaf, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Donation, UserRole } from "@/lib/types";
 import { ClaimDonationDialog } from "./claim-donation-dialog";
 import { DonationDetailsDialog } from "./donation-details-dialog";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { canAnyServiceDeliver, getEstimatedDeliveryMinutes } from "@/lib/delivery-utils";
 
 /* Urgency thresholds: if pickup deadline < 4h ⇒ URGENT */
 function getUrgency(d: Donation) {
@@ -110,25 +111,40 @@ export function DonationCard({ donation, role }: { donation: Donation; role: Use
         </div>
 
         {/* Footer */}
-        <div className="px-4 pb-4 flex gap-2">
-          <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setIsViewingDetails(true)}>
-            Details
-          </Button>
-          {role === 'ngo' && currentStatus === 'available' && (
-            <Button size="sm" className="flex-1 text-xs" onClick={() => setIsClaiming(true)}>
-              <HeartHandshake className="h-3.5 w-3.5 mr-1" />Claim Donation
+        <div className="px-4 pb-4 flex flex-col gap-2">
+          {/* Delivery safety warning banner for NGO */}
+          {role === 'ngo' && currentStatus === 'available' && !canAnyServiceDeliver(donation) && (
+            <div className="flex items-center gap-1.5 rounded-xl bg-red-500/10 border border-red-500/25 px-3 py-2 text-[10px] font-semibold text-red-400">
+              <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+              <span>Food will expire before any delivery option can arrive</span>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setIsViewingDetails(true)}>
+              Details
             </Button>
-          )}
-          {role === 'donor' && (
-            <span className={cn(
-              "flex-1 flex items-center justify-center text-[10px] font-bold rounded-md border",
-              currentStatus === 'available' ? 'badge-claimed' :
-                currentStatus === 'claimed' ? 'badge-urgent' :
-                  currentStatus === 'picked-up' ? 'badge-completed' : 'badge-standard'
-            )}>
-              {currentStatus.toUpperCase().replace('-', ' ')}
-            </span>
-          )}
+            {role === 'ngo' && currentStatus === 'available' && (
+              canAnyServiceDeliver(donation) ? (
+                <Button size="sm" className="flex-1 text-xs" onClick={() => setIsClaiming(true)}>
+                  <HeartHandshake className="h-3.5 w-3.5 mr-1" />Claim Donation
+                </Button>
+              ) : (
+                <span className="flex-1 flex items-center justify-center gap-1 text-[10px] font-bold rounded-md border border-red-500/30 bg-red-500/10 text-red-400 px-2 py-1">
+                  <XCircle className="h-3 w-3" />Too Late to Claim
+                </span>
+              )
+            )}
+            {role === 'donor' && (
+              <span className={cn(
+                "flex-1 flex items-center justify-center text-[10px] font-bold rounded-md border",
+                currentStatus === 'available' ? 'badge-claimed' :
+                  currentStatus === 'claimed' ? 'badge-urgent' :
+                    currentStatus === 'picked-up' ? 'badge-completed' : 'badge-standard'
+              )}>
+                {currentStatus.toUpperCase().replace('-', ' ')}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

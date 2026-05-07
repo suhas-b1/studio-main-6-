@@ -31,7 +31,11 @@ import {
   Clock,
   MoreVertical,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  AlertTriangle,
+  ShieldCheck,
+  Timer,
+  XCircle,
 } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { useDonations } from '@/context/donations-context';
@@ -41,6 +45,12 @@ import { AddressManager } from '../profile/address-manager';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
+import {
+  isDeliverableBefore,
+  getDeliveryWarning,
+  formatArrivalLabel,
+  getEstimatedArrival,
+} from '@/lib/delivery-utils';
 
 declare global {
   interface Window {
@@ -253,6 +263,13 @@ export function ClaimDonationDialog({
         );
 
       case 'service':
+        const isSafe = isDeliverableBefore(donation, serviceType);
+        const warningMsg = getDeliveryWarning(donation, serviceType);
+        const arrivalLabel = formatArrivalLabel(serviceType, donation.distance);
+        const estimatedArrival = getEstimatedArrival(serviceType, donation.distance);
+        const timeUntilDeadline = Math.round((donation.pickupDeadline.getTime() - Date.now()) / 60_000);
+        const fmtMins = (m: number) => m >= 60 ? `${Math.floor(m / 60)}h ${m % 60 > 0 ? m % 60 + 'm' : ''}`.trim() : `${m}m`;
+
         return (
           <div className="space-y-6 pt-2">
             <div className="space-y-3">
@@ -262,28 +279,88 @@ export function ClaimDonationDialog({
                   { id: 'pickup', label: 'Self Pickup', price: 'Free', icon: Warehouse, desc: 'Your team collects from donor location' },
                   { id: 'delivery', label: 'Delivery Service', price: `₹${billing.deliveryFee}`, icon: Truck, desc: 'Official delivery partner (Recommended)' },
                   { id: 'drop', label: 'Donor Drop', price: '₹20', icon: MapPin, desc: 'Donor brings it to you (Subject to approval)' },
-                ].map((s) => (
-                  <Label
-                    key={s.id}
-                    className={cn(
-                      "flex items-center justify-between p-4 rounded-2xl border bg-card cursor-pointer transition-all hover:border-primary/50",
-                      serviceType === s.id && "border-primary ring-1 ring-primary bg-primary/5"
-                    )}
-                  >
-                    <div className="flex items-start gap-3">
-                      <RadioGroupItem value={s.id} className="mt-1" />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <s.icon className={cn("h-4 w-4", serviceType === s.id ? "text-primary" : "text-muted-foreground")} />
-                          <p className="font-bold text-sm">{s.label}</p>
+                ].map((s) => {
+                  const optionSafe = isDeliverableBefore(donation, s.id as ServiceType);
+                  const optionArrival = formatArrivalLabel(s.id as ServiceType, donation.distance);
+                  return (
+                    <Label
+                      key={s.id}
+                      className={cn(
+                        "flex items-center justify-between p-4 rounded-2xl border bg-card cursor-pointer transition-all hover:border-primary/50",
+                        serviceType === s.id && "border-primary ring-1 ring-primary bg-primary/5",
+                        !optionSafe && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      <div className="flex items-start gap-3">
+                        <RadioGroupItem value={s.id} disabled={!optionSafe} className="mt-1" />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <s.icon className={cn("h-4 w-4", serviceType === s.id ? "text-primary" : "text-muted-foreground")} />
+                            <p className="font-bold text-sm">{s.label}</p>
+                            {!optionSafe && (
+                              <span className="text-[9px] font-bold bg-red-500/15 text-red-400 border border-red-500/20 rounded-full px-1.5 py-0.5">TOO SLOW</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">{s.desc}</p>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">{s.desc}</p>
                       </div>
-                    </div>
-                    <p className="font-bold text-sm text-primary">{s.price}</p>
-                  </Label>
-                ))}
+                      <div className="flex flex-col items-end gap-1">
+                        <p className="font-bold text-sm text-primary">{s.price}</p>
+                        <span className={cn(
+                          "text-[9px] font-semibold px-1.5 py-0.5 rounded-full border",
+                          optionSafe
+                            ? "bg-green-500/10 text-green-400 border-green-500/20"
+                            : "bg-red-500/10 text-red-400 border-red-500/20"
+                        )}>
+                          {optionArrival}
+                        </span>
+                      </div>
+                    </Label>
+                  );
+                })}
               </RadioGroup>
+            </div>
+
+            {/* Delivery Safety Banner */}
+            <div className={cn(
+              "rounded-2xl border p-4 transition-all duration-300",
+              isSafe
+                ? "bg-green-500/8 border-green-500/25"
+                : "bg-red-500/8 border-red-500/25"
+            )}>
+              <div className="flex items-center gap-2 mb-3">
+                {isSafe ? (
+                  <ShieldCheck className="h-4 w-4 text-green-400 flex-shrink-0" />
+                ) : (
+                  <AlertTriangle className="h-4 w-4 text-red-400 flex-shrink-0" />
+                )}
+                <p className={cn(
+                  "text-xs font-bold uppercase tracking-widest",
+                  isSafe ? "text-green-400" : "text-red-400"
+                )}>
+                  {isSafe ? "Safe to Deliver" : "Delivery Risk Detected"}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-background/40 rounded-xl p-2.5 text-center">
+                  <p className="text-[9px] text-muted-foreground uppercase font-bold mb-1">Est. Arrival</p>
+                  <p className={cn("text-sm font-black", isSafe ? "text-green-400" : "text-red-400")}>{arrivalLabel}</p>
+                </div>
+                <div className="bg-background/40 rounded-xl p-2.5 text-center">
+                  <p className="text-[9px] text-muted-foreground uppercase font-bold mb-1">Expires In</p>
+                  <p className={cn("text-sm font-black", timeUntilDeadline < 60 ? "text-orange-400" : "text-foreground")}>
+                    {fmtMins(Math.max(0, timeUntilDeadline))}
+                  </p>
+                </div>
+              </div>
+              {!isSafe && warningMsg && (
+                <p className="text-[10px] text-red-400/80 mt-2.5 leading-relaxed">{warningMsg}</p>
+              )}
+              {isSafe && (
+                <p className="text-[10px] text-green-400/80 mt-2.5">
+                  ✓ Food will arrive at approximately {estimatedArrival.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}, well before expiry.
+                </p>
+              )}
             </div>
 
             <div className="bg-muted/30 p-4 rounded-2xl border border-border space-y-2">
@@ -319,8 +396,20 @@ export function ClaimDonationDialog({
               <Button variant="outline" className="h-12 rounded-2xl px-4" onClick={() => setStep('address')}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button className="flex-1 h-12 rounded-2xl font-bold" onClick={() => setStep('payment')}>
-                Proceed to Payment <ChevronRight className="ml-2 h-4 w-4" />
+              <Button
+                className={cn(
+                  "flex-1 h-12 rounded-2xl font-bold transition-all",
+                  !isSafe && "opacity-60 cursor-not-allowed"
+                )}
+                onClick={() => isSafe && setStep('payment')}
+                disabled={!isSafe}
+                title={!isSafe ? "Select a faster delivery option" : undefined}
+              >
+                {isSafe ? (
+                  <>Proceed to Payment <ChevronRight className="ml-2 h-4 w-4" /></>
+                ) : (
+                  <><XCircle className="mr-2 h-4 w-4" />Cannot Proceed – Food Will Expire</>
+                )}
               </Button>
             </div>
           </div>
