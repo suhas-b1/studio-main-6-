@@ -224,7 +224,9 @@ export function ActiveAlertsBanner({ role }: { role: string }) {
     
     // Find the newest high priority alert
     const newHighPriority = filteredAlerts.find(alert => {
-      return alert.priority === 'high' && (Date.now() - new Date(alert.createdAt).getTime()) < 10000; // Last 10 seconds
+      // Only show popup for donors during the demo as requested
+      const isDonor = role === 'donor';
+      return isDonor && alert.priority === 'high' && (Date.now() - new Date(alert.createdAt).getTime()) < 10000;
     });
 
     if (newHighPriority && (!sosAlert || sosAlert.id !== newHighPriority.id)) {
