@@ -339,23 +339,64 @@ export function NewDonationForm() {
                                         </PopoverContent>
                                     </Popover>
 
-                                    {/* Time picker */}
-                                    <input
-                                        type="time"
-                                        className={cn(inputCls, 'w-32 cursor-pointer')}
-                                        value={field.value ? format(field.value, 'HH:mm') : ''}
-                                        placeholder="HH:MM"
-                                        onChange={(e) => {
-                                            const timeStr = e.target.value;
-                                            if (!timeStr) return;
-                                            const [hours, minutes] = timeStr.split(':').map(Number);
-                                            const newDate = field.value ? new Date(field.value) : new Date();
-                                            newDate.setHours(hours);
-                                            newDate.setMinutes(minutes);
-                                            newDate.setSeconds(0);
-                                            field.onChange(newDate);
-                                        }}
-                                    />
+                                    {/* 12-Hour Time Picker */}
+                                    <div className="flex gap-1 items-center">
+                                        {/* Hour */}
+                                        <select
+                                            className={cn(inputCls, 'w-16 px-2 text-center cursor-pointer')}
+                                            value={field.value ? (field.value.getHours() % 12 || 12).toString() : '12'}
+                                            onChange={(e) => {
+                                                const h12 = parseInt(e.target.value);
+                                                const isPM = field.value ? field.value.getHours() >= 12 : false;
+                                                const h24 = isPM ? (h12 === 12 ? 12 : h12 + 12) : (h12 === 12 ? 0 : h12);
+                                                const newDate = field.value ? new Date(field.value) : new Date();
+                                                newDate.setHours(h24);
+                                                newDate.setSeconds(0);
+                                                field.onChange(newDate);
+                                            }}
+                                        >
+                                            {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
+                                                <option key={h} value={h}>{String(h).padStart(2, '0')}</option>
+                                            ))}
+                                        </select>
+
+                                        <span className="text-muted-foreground font-bold">:</span>
+
+                                        {/* Minute */}
+                                        <select
+                                            className={cn(inputCls, 'w-16 px-2 text-center cursor-pointer')}
+                                            value={field.value ? String(field.value.getMinutes()).padStart(2, '0') : '00'}
+                                            onChange={(e) => {
+                                                const newDate = field.value ? new Date(field.value) : new Date();
+                                                newDate.setMinutes(parseInt(e.target.value));
+                                                newDate.setSeconds(0);
+                                                field.onChange(newDate);
+                                            }}
+                                        >
+                                            {Array.from({ length: 12 }, (_, i) => i * 5).map(m => (
+                                                <option key={m} value={m}>{String(m).padStart(2, '0')}</option>
+                                            ))}
+                                        </select>
+
+                                        {/* AM / PM toggle */}
+                                        <button
+                                            type="button"
+                                            className={cn(
+                                                'px-3 py-2.5 rounded-xl text-sm font-bold border transition',
+                                                field.value && field.value.getHours() >= 12
+                                                    ? 'bg-primary text-black border-primary'
+                                                    : 'bg-card text-muted-foreground border-border hover:border-primary/50'
+                                            )}
+                                            onClick={() => {
+                                                const newDate = field.value ? new Date(field.value) : new Date();
+                                                const h = newDate.getHours();
+                                                newDate.setHours(h >= 12 ? h - 12 : h + 12);
+                                                field.onChange(newDate);
+                                            }}
+                                        >
+                                            {field.value && field.value.getHours() >= 12 ? 'PM' : 'AM'}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Live preview of selected deadline */}
