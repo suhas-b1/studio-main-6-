@@ -47,15 +47,35 @@ function AlertCard({ alert, canRespond }: { alert: EmergencyAlert; canRespond: b
       <p className="text-sm text-foreground leading-relaxed">{alert.description}</p>
 
       {/* Location & Time */}
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-          <span className="truncate">{alert.location}</span>
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between group/loc">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-1 min-w-0">
+            <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-primary" />
+            <span className="truncate font-medium text-foreground/80">{alert.location}</span>
+          </div>
+          {alert.latitude && alert.longitude && (
+            <a 
+              href={`https://www.google.com/maps?q=${alert.latitude},${alert.longitude}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] font-bold text-primary hover:underline ml-2 flex-shrink-0"
+            >
+              Navigate
+            </a>
+          )}
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Clock className="h-3.5 w-3.5 flex-shrink-0" />
-          <span>{formatDistanceToNow(new Date(alert.createdAt), { addSuffix: true })}</span>
-          <span className="text-muted-foreground/60">• by {alert.creatorName}</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+            <span>{formatDistanceToNow(new Date(alert.createdAt), { addSuffix: true })}</span>
+            <span className="text-muted-foreground/60">• by {alert.creatorName}</span>
+          </div>
+          <a 
+            href={`/alerts?role=${user?.uid === alert.creatorId ? 'donor' : 'ngo'}&focus=${alert.id}`}
+            className="text-[10px] font-bold text-muted-foreground hover:text-primary transition"
+          >
+            View on Map
+          </a>
         </div>
       </div>
 

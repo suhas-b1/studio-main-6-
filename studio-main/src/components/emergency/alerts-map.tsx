@@ -53,49 +53,55 @@ export default function AlertsMap() {
 
     // Remove old markers
     markers.forEach((m: any) => m.remove());
-    mapInstanceRef.current.markers = [];
+    const newMarkers: any[] = [];
 
     import('leaflet').then(L => {
-      activeAlerts
-        .filter(a => a.latitude && a.longitude)
-        .forEach(alert => {
-          const color = PRIORITY_COLORS[alert.priority];
+      const validAlerts = activeAlerts.filter(a => a.latitude && a.longitude);
+      
+      if (validAlerts.length > 0) {
+        const bounds = L.latLngBounds(validAlerts.map(a => [a.latitude!, a.longitude!]));
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+      }
 
-          const svgIcon = L.divIcon({
-            html: `<div style="
-              width:36px;height:36px;border-radius:50%;
-              background:${color}20;border:3px solid ${color};
-              display:flex;align-items:center;justify-content:center;
-              box-shadow:0 0 0 6px ${color}30,0 4px 20px ${color}60;
-              animation:sos-map-pulse 2s infinite;
-            ">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.5">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-              </svg>
-            </div>`,
-            className: '',
-            iconSize: [36, 36],
-            iconAnchor: [18, 18],
+      validAlerts.forEach(alert => {
+        const color = PRIORITY_COLORS[alert.priority];
+
+        const svgIcon = L.divIcon({
+          html: `<div style="
+            width:36px;height:36px;border-radius:50%;
+            background:${color}20;border:3px solid ${color};
+            display:flex;align-items:center;justify-content:center;
+            box-shadow:0 0 0 6px ${color}30,0 4px 20px ${color}60;
+            animation:sos-map-pulse 2s infinite;
+          ">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.5">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>`,
+          className: '',
+          iconSize: [36, 36],
+          iconAnchor: [18, 18],
+        });
+
+        const marker = L.marker([alert.latitude!, alert.longitude!], { icon: svgIcon })
+          .addTo(map)
+          .bindPopup(`
+            <div style="font-family:system-ui;min-width:200px">
+              <div style="color:${color};font-weight:900;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">
+                ● ${alert.priority} Priority
+              </div>
+              <p style="font-size:13px;margin:0 0 6px;color:#fff">${alert.description}</p>
+              <p style="font-size:11px;color:#888;margin:0">📍 ${alert.location}</p>
+              <p style="font-size:11px;color:#888;margin:4px 0 0">By: ${alert.creatorName}</p>
+            </div>
+          `, {
+            className: 'dark-popup',
           });
 
-          const marker = L.marker([alert.latitude!, alert.longitude!], { icon: svgIcon })
-            .addTo(map)
-            .bindPopup(`
-              <div style="font-family:system-ui;min-width:200px">
-                <div style="color:${color};font-weight:900;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">
-                  ● ${alert.priority} Priority
-                </div>
-                <p style="font-size:13px;margin:0 0 6px;color:#fff">${alert.description}</p>
-                <p style="font-size:11px;color:#888;margin:0">📍 ${alert.location}</p>
-                <p style="font-size:11px;color:#888;margin:4px 0 0">By: ${alert.creatorName}</p>
-              </div>
-            `, {
-              className: 'dark-popup',
-            });
-
-          mapInstanceRef.current.markers.push(marker);
-        });
+        newMarkers.push(marker);
+      });
+      mapInstanceRef.current.markers = newMarkers;
     });
   }, [activeAlerts]);
 

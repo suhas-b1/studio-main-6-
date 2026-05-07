@@ -41,7 +41,47 @@ const statusMeta = {
   expired: { label: 'EXPIRED', cls: 'badge-standard' },
 } as const;
 
-/* ─── Donor Dashboard ───────────────────────────────────── */
+function EmergencyHighlights() {
+  const { activeAlerts } = useEmergencyAlerts();
+  const highAlerts = activeAlerts.filter(a => a.priority === 'high').slice(0, 2);
+
+  if (highAlerts.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Urgent Food Crises</h3>
+        <Link href="/alerts?role=donor" className="text-[10px] font-bold text-primary hover:underline">View All Alerts</Link>
+      </div>
+      <div className="grid gap-3">
+        {highAlerts.map(alert => (
+          <Link key={alert.id} href={`/alerts?role=donor&focus=${alert.id}`}>
+            <div className="group rounded-2xl border border-red-500/30 bg-red-500/5 p-4 transition-all hover:bg-red-500/10 hover:border-red-500/50">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-ping" />
+                    <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">High Priority</span>
+                  </div>
+                  <p className="text-sm font-bold text-foreground line-clamp-1 mb-1">{alert.description}</p>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <MapPin className="h-3 w-3 text-red-400" />
+                    <span className="truncate">{alert.location}</span>
+                  </div>
+                </div>
+                <div className="h-8 w-8 rounded-full bg-red-500/20 flex items-center justify-center group-hover:scale-110 transition">
+                  <ArrowRight className="h-4 w-4 text-red-400" />
+                </div>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+import { useEmergencyAlerts } from '@/context/emergency-alerts-context';
 const DonorDashboard = () => {
   const myDonations = mockDonations.filter(d => d.donorId === 'user-donor-1' || d.donorId === 'user-donor-2');
   const activeListings = myDonations.filter(d => d.status === 'available');
@@ -146,6 +186,9 @@ const DonorDashboard = () => {
           <div className="absolute -bottom-6 -right-6 w-32 h-32 rounded-full bg-red-500/5 blur-2xl pointer-events-none" />
         </div>
       </Link>
+
+      {/* Nearby Emergency Alerts Highlight */}
+      <EmergencyHighlights />
 
       {/* Recent activity */}
       <div>

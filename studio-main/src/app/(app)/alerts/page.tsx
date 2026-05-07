@@ -28,9 +28,13 @@ export default function AlertsPage() {
   const { activeAlerts, respondToAlert, closeAlert, isLoading } = useEmergencyAlerts();
   const searchParams = useSearchParams();
   const role = searchParams.get('role') || 'donor';
-  const [filter, setFilter] = useState<AlertPriority | 'all'>('all');
-
   const filtered = filter === 'all' ? activeAlerts : activeAlerts.filter(a => a.priority === filter);
+  const focusId = searchParams.get('focus');
+
+  // If a specific alert is focused, ensure it's in the filtered list
+  const displayAlerts = focusId && !filtered.find(a => a.id === focusId)
+    ? [activeAlerts.find(a => a.id === focusId)!, ...filtered].filter(Boolean)
+    : filtered;
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden">
@@ -106,12 +110,18 @@ export default function AlertsPage() {
             </div>
           )}
 
-          {filtered.map(alert => {
+          {displayAlerts.map(alert => {
             const colors = PRIORITY_COLORS[alert.priority];
+            const isFocused = alert.id === focusId;
             return (
               <div
                 key={alert.id}
-                className={cn('rounded-2xl border p-4 space-y-3 transition-all', colors.badge)}
+                id={`alert-${alert.id}`}
+                className={cn(
+                  'rounded-2xl border p-4 space-y-3 transition-all', 
+                  colors.badge,
+                  isFocused && 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-[1.02] shadow-xl z-10'
+                )}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -158,6 +168,16 @@ export default function AlertsPage() {
               </div>
             );
           })}
+          
+          {/* Scroll to focus effect */}
+          {focusId && (
+            <script dangerouslySetInnerHTML={{ __html: `
+              setTimeout(() => {
+                const el = document.getElementById('alert-${focusId}');
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 500);
+            `}} />
+          )}
         </div>
       </div>
 
