@@ -204,9 +204,7 @@ export function ActiveAlertsBanner({ role }: { role: string }) {
     }
   }, []);
 
-  const isNgoOrVolunteer = role === 'ngo';
-  
-  // Filtering logic: Donors only see alerts within 5km. NGOs see everything.
+  // Filtering logic: In demo mode, show all high priority alerts to everyone within 5km, or all if location fails.
   const filteredAlerts = activeAlerts.map(alert => {
     let distance: number | undefined;
     if (userCoords && alert.latitude && alert.longitude) {
@@ -214,33 +212,25 @@ export function ActiveAlertsBanner({ role }: { role: string }) {
     }
     return { ...alert, distance };
   }).filter(alert => {
-    if (isNgoOrVolunteer) return true; // NGOs see all
-    if (alert.distance === undefined) return true; // Show if distance unknown (fallback)
-    return alert.distance <= 5; // Donors only see within 5km
+    // For demo: if we have distance, filter by 5km. If not, show anyway.
+    if (alert.distance === undefined) return true; 
+    return alert.distance <= 5;
   });
 
   // Check for new high-priority alerts to trigger the SOS Overlay
   useEffect(() => {
+    console.log('Detecting alerts for demo:', filteredAlerts.length);
     if (filteredAlerts.length === 0) return;
     
+    // Find the newest high priority alert
     const newHighPriority = filteredAlerts.find(alert => {
-      // Must be high priority
-      if (alert.priority !== 'high') return false;
-      // Must be relatively new (created in the last 2 minutes)
-      const isNew = (Date.now() - new Date(alert.createdAt).getTime()) < 2 * 60 * 1000;
-      // Must not have been seen in this session
-      const notSeen = !seenAlertsRef.current.has(alert.id);
-      return isNew && notSeen;
+      return alert.priority === 'high' && (Date.now() - new Date(alert.createdAt).getTime()) < 10000; // Last 10 seconds
     });
 
-    if (newHighPriority) {
-      seenAlertsRef.current.add(newHighPriority.id);
+    if (newHighPriority && (!sosAlert || sosAlert.id !== newHighPriority.id)) {
       setSosAlert(newHighPriority);
     }
-
-    // Mark all current alerts as seen so we don't trigger them later
-    filteredAlerts.forEach(a => seenAlertsRef.current.add(a.id));
-  }, [filteredAlerts]);
+  }, [filteredAlerts, sosAlert]);
 
   const highAlertsCount = filteredAlerts.filter(a => a.priority === 'high').length;
 
