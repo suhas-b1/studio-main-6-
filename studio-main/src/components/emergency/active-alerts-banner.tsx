@@ -6,7 +6,86 @@ import { ShieldAlert, MapPin, Clock, CheckCircle2, ChevronUp, X, Navigation } fr
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { calculateDistance } from '@/lib/distance';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+
+// Simple Web Audio API Siren
+function playSiren() {
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(600, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(1200, ctx.currentTime + 0.4);
+    osc.frequency.linearRampToValueAtTime(600, ctx.currentTime + 0.8);
+    
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.1);
+    gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.7);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.8);
+    
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.8);
+  } catch (e) {
+    console.warn("Audio playback failed", e);
+  }
+}
+
+function GlobalSOSOverlay({ alert, onClose }: { alert: EmergencyAlert, onClose: () => void }) {
+  useEffect(() => {
+    playSiren();
+    const interval = setInterval(playSiren, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-red-950/90 backdrop-blur-md animate-in fade-in duration-300">
+      <div className="text-center space-y-6 p-6 max-w-lg w-full animate-in zoom-in-95 duration-500">
+        <div className="relative mx-auto w-32 h-32 mb-8">
+          <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-75" />
+          <div className="relative flex items-center justify-center w-full h-full bg-red-600 rounded-full shadow-[0_0_60px_rgba(220,38,38,0.8)]">
+            <ShieldAlert className="w-16 h-16 text-white" />
+          </div>
+        </div>
+        
+        <h1 className="text-5xl md:text-6xl font-black text-white uppercase tracking-widest drop-shadow-2xl">
+          SOS ALERT
+        </h1>
+        
+        <div className="bg-black/40 p-6 rounded-3xl border border-red-500/30 backdrop-blur-xl">
+          <p className="text-lg md:text-xl text-white font-medium leading-relaxed mb-4">
+            {alert.description}
+          </p>
+          <div className="flex items-center justify-center gap-2 text-red-200 bg-red-900/40 py-2 px-4 rounded-xl inline-flex mx-auto">
+            <MapPin className="h-5 w-5" />
+            <span className="font-bold">{alert.location}</span>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+          <button 
+            onClick={onClose} 
+            className="px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition"
+          >
+            Dismiss
+          </button>
+          <a 
+            href={`/alerts?role=donor&focus=${alert.id}`} 
+            className="px-8 py-4 rounded-2xl bg-red-600 text-white font-black text-lg hover:bg-red-500 hover:scale-105 transition-all shadow-[0_0_40px_rgba(220,38,38,0.4)]"
+          >
+            Show Details & Map
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const PRIORITY_COLORS = {
   high: { bg: 'bg-red-500/10', border: 'border-red-500/30', badge: 'bg-red-500 text-white', dot: 'bg-red-500', text: 'text-red-400' },
@@ -107,6 +186,8 @@ export function ActiveAlertsBanner({ role }: { role: string }) {
   const { activeAlerts } = useEmergencyAlerts();
   const [expanded, setExpanded] = useState(true);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [sosAlert, setSosAlert] = useState<EmergencyAlert | null>(null);
+  const seenAlertsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -132,12 +213,37 @@ export function ActiveAlertsBanner({ role }: { role: string }) {
     return alert.distance <= 5; // Donors only see within 5km
   });
 
+  // Check for new high-priority alerts to trigger the SOS Overlay
+  useEffect(() => {
+    if (filteredAlerts.length === 0) return;
+    
+    const newHighPriority = filteredAlerts.find(alert => {
+      // Must be high priority
+      if (alert.priority !== 'high') return false;
+      // Must be relatively new (created in the last 2 minutes)
+      const isNew = (Date.now() - new Date(alert.createdAt).getTime()) < 2 * 60 * 1000;
+      // Must not have been seen in this session
+      const notSeen = !seenAlertsRef.current.has(alert.id);
+      return isNew && notSeen;
+    });
+
+    if (newHighPriority) {
+      seenAlertsRef.current.add(newHighPriority.id);
+      setSosAlert(newHighPriority);
+    }
+
+    // Mark all current alerts as seen so we don't trigger them later
+    filteredAlerts.forEach(a => seenAlertsRef.current.add(a.id));
+  }, [filteredAlerts]);
+
   const highAlertsCount = filteredAlerts.filter(a => a.priority === 'high').length;
 
   if (filteredAlerts.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-red-500/30 bg-red-500/5 overflow-hidden mb-4 animate-in fade-in slide-in-from-top-2">
+    <>
+      {sosAlert && <GlobalSOSOverlay alert={sosAlert} onClose={() => setSosAlert(null)} />}
+      <div className="rounded-2xl border border-red-500/30 bg-red-500/5 overflow-hidden mb-4 animate-in fade-in slide-in-from-top-2">
       {/* Banner header */}
       <button
         onClick={() => setExpanded(!expanded)}
@@ -172,5 +278,6 @@ export function ActiveAlertsBanner({ role }: { role: string }) {
         </div>
       )}
     </div>
+    </>
   );
 }
