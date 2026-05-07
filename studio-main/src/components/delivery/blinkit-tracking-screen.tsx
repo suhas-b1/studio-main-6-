@@ -1,6 +1,5 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bike, 
   MapPin, 
@@ -9,7 +8,6 @@ import {
   ShieldCheck, 
   Clock, 
   ChevronRight,
-  ExternalLink,
   Navigation
 } from 'lucide-react';
 import { DeliveryTracking, DeliveryStatus } from '@/context/delivery-context';
@@ -49,17 +47,27 @@ export default function BlinkitTrackingScreen({ delivery, onClose }: BlinkitTrac
   const getStepStatus = (step: DeliveryStatus) => {
     const currentIndex = STATUS_STEPS.indexOf(delivery.status);
     const stepIndex = STATUS_STEPS.indexOf(step);
-    
-    // Handle statuses not in the main sequence
     if (delivery.status === 'near_receiver') return step === 'delivered' ? 'pending' : 'completed';
-    
     if (stepIndex < currentIndex) return 'completed';
     if (stepIndex === currentIndex) return 'active';
     return 'pending';
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#0a0a0a] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-10 duration-500">
+    <div className="fixed inset-0 z-[100] bg-[#0a0a0a] flex flex-col overflow-hidden" style={{ animation: 'fadeInUp 0.5s ease' }}>
+      <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(40px); }
+          to   { opacity: 1; transform: translateY(0);    }
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0);    }
+        }
+        .slide-up { animation: slideUp 0.4s ease 0.2s both; }
+        .progress-bar { transition: width 0.8s ease; }
+      `}</style>
+
       {/* Header */}
       <div className="px-6 pt-12 pb-6 flex items-center justify-between bg-gradient-to-b from-black/80 to-transparent">
         <div className="flex items-center gap-3">
@@ -81,11 +89,7 @@ export default function BlinkitTrackingScreen({ delivery, onClose }: BlinkitTrac
         <LiveTrackingMap delivery={delivery} role="receiver" />
         
         {/* Floating ETA Card */}
-        <motion.div 
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="absolute bottom-6 left-6 right-6 bg-[#1a1a1a]/95 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 shadow-2xl shadow-black/50"
-        >
+        <div className="absolute bottom-6 left-6 right-6 bg-[#1a1a1a]/95 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 shadow-2xl shadow-black/50 slide-up">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <div className="h-14 w-14 rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
@@ -118,6 +122,7 @@ export default function BlinkitTrackingScreen({ delivery, onClose }: BlinkitTrac
           <div className="flex justify-between items-center px-2">
             {STATUS_STEPS.map((step, idx) => {
               const state = getStepStatus(step);
+              const StepIcon = STATUS_CONFIG[step].icon;
               return (
                 <div key={step} className="flex flex-col items-center gap-2 relative">
                   <div className={cn(
@@ -126,7 +131,7 @@ export default function BlinkitTrackingScreen({ delivery, onClose }: BlinkitTrac
                     state === 'active' ? "bg-primary/20 border-primary text-primary animate-pulse" :
                     "bg-white/5 border-white/10 text-white/40"
                   )}>
-                    {STATUS_CONFIG[step].icon && <STATUS_CONFIG[step].icon className="h-5 w-5" />}
+                    {StepIcon && <StepIcon className="h-5 w-5" />}
                   </div>
                   <span className={cn(
                     "text-[10px] font-black uppercase tracking-tighter text-center max-w-[60px]",
@@ -137,11 +142,10 @@ export default function BlinkitTrackingScreen({ delivery, onClose }: BlinkitTrac
                   
                   {/* Connector Line */}
                   {idx < STATUS_STEPS.length - 1 && (
-                    <div className="absolute top-5 left-10 w-[calc(100vw/5)] h-[2px] bg-white/10 -z-10">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: state === 'completed' ? '100%' : '0%' }}
-                        className="h-full bg-primary"
+                    <div className="absolute top-5 left-10 w-[calc(100vw/5)] h-[2px] bg-white/10 -z-10 overflow-hidden">
+                      <div 
+                        className="h-full bg-primary progress-bar"
+                        style={{ width: state === 'completed' ? '100%' : '0%' }}
                       />
                     </div>
                   )}
@@ -168,7 +172,7 @@ export default function BlinkitTrackingScreen({ delivery, onClose }: BlinkitTrac
               <span className="text-[10px] font-black text-black uppercase tracking-widest">Open Maps</span>
             </a>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Safety Indicator */}

@@ -1,281 +1,341 @@
 'use client';
 
 import { useEmergencyAlerts, EmergencyAlert } from '@/context/emergency-alerts-context';
-import { useUser } from '@/firebase';
+import { initializeFirebase } from '@/firebase';
 import { ShieldAlert, MapPin, Clock, CheckCircle2, ChevronUp, X, Navigation } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { calculateDistance } from '@/lib/distance';
 import { useEffect, useState, useRef } from 'react';
 
-// Simple Web Audio API Siren (Alternating frequencies)
+// ─── Audio Siren ─────────────────────────────────────────────────────────────
 function playSiren() {
   try {
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
-    
-    const playTone = (freq: number, start: number, duration: number) => {
+    const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const play = (freq: number, start: number) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.type = 'square';
+      osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
       gain.gain.setValueAtTime(0, ctx.currentTime + start);
-      gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + start + 0.05);
-      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + start + duration);
+      gain.gain.linearRampToValueAtTime(0.6, ctx.currentTime + start + 0.05);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + start + 0.4);
       osc.start(ctx.currentTime + start);
-      osc.stop(ctx.currentTime + start + duration);
+      osc.stop(ctx.currentTime + start + 0.5);
     };
-
-    playTone(800, 0, 0.4);
-    playTone(600, 0.4, 0.4);
-  } catch (e) {
-    console.warn("Audio playback failed", e);
-  }
+    play(880, 0);
+    play(660, 0.5);
+    play(880, 1.0);
+  } catch (e) { /* silent */ }
 }
 
-function GlobalSOSOverlay({ alert, onClose }: { alert: EmergencyAlert, onClose: () => void }) {
+// ─── SOS Full‑Screen Overlay ──────────────────────────────────────────────────
+function GlobalSOSOverlay({ alert, onClose }: { alert: EmergencyAlert; onClose: () => void }) {
+  const [flash, setFlash] = useState(false);
+  const { respondToAlert } = useEmergencyAlerts();
+
   useEffect(() => {
     playSiren();
-    const interval = setInterval(playSiren, 800);
-    return () => clearInterval(interval);
+    const siren = setInterval(playSiren, 1500);
+    const flasher = setInterval(() => setFlash(f => !f), 200);
+    return () => { clearInterval(siren); clearInterval(flasher); };
   }, []);
 
-  return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-red-950/95 backdrop-blur-xl animate-in fade-in duration-300">
-      {/* Background pulsing effect */}
-      <div className="absolute inset-0 bg-red-600/10 animate-[pulse_1s_infinite]" />
-      
-      <div className="relative text-center space-y-6 p-8 max-w-xl w-full animate-in zoom-in-95 slide-in-from-bottom-10 duration-500">
-        <div className="relative mx-auto w-40 h-40 mb-8">
-          <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-75" />
-          <div className="absolute inset-[-20px] bg-red-500/20 rounded-full animate-pulse" />
-          <div className="relative flex items-center justify-center w-full h-full bg-gradient-to-br from-red-500 to-red-800 rounded-full shadow-[0_0_80px_rgba(220,38,38,1)] border-4 border-white/20">
-            <ShieldAlert className="w-20 h-20 text-white animate-bounce" />
-          </div>
-        </div>
-        
-        <div className="space-y-2">
-          <h1 className="text-6xl md:text-7xl font-black text-white uppercase tracking-tighter drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] italic">
-            SOS ALERT
-          </h1>
-          <div className="h-1.5 w-32 bg-red-500 mx-auto rounded-full animate-pulse" />
-        </div>
-        
-        <div className="bg-black/60 p-8 rounded-[2rem] border-2 border-red-500/50 backdrop-blur-2xl shadow-2xl transform -rotate-1">
-          <p className="text-xl md:text-2xl text-white font-black leading-tight mb-6">
-            "{alert.description}"
-          </p>
-          <div className="flex items-center justify-center gap-3 text-red-100 bg-red-600/40 py-3 px-6 rounded-2xl inline-flex mx-auto border border-red-500/30">
-            <MapPin className="h-6 w-6 animate-bounce" />
-            <span className="font-black text-lg tracking-tight uppercase">{alert.location}</span>
-          </div>
-        </div>
+  const googleMapsUrl = alert.latitude && alert.longitude
+    ? `https://www.google.com/maps/dir/?api=1&destination=${alert.latitude},${alert.longitude}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(alert.location)}`;
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
-          <button 
-            onClick={onClose} 
-            className="px-8 py-5 rounded-2xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition active:scale-95"
-          >
-            Dismiss Alert
-          </button>
-          <a 
-            href={`/alerts?role=donor&focus=${alert.id}`} 
-            className="px-10 py-5 rounded-2xl bg-red-600 text-white font-black text-xl hover:bg-red-500 hover:scale-105 transition-all shadow-[0_20px_50px_rgba(220,38,38,0.6)] border-b-4 border-red-800 active:border-b-0 active:translate-y-1"
-          >
-            RESPOND IMMEDIATELY
-          </a>
+  const handleAccept = async () => {
+    await respondToAlert(alert.id);
+    onClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[99999] flex flex-col items-center justify-center p-6"
+      style={{ background: flash ? '#1a0000' : '#000000' }}
+    >
+      {/* Scan line */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div
+          className="absolute left-0 w-full h-0.5 bg-red-500"
+          style={{
+            boxShadow: '0 0 20px 4px #ff0000',
+            animation: 'scanline 2s linear infinite',
+          }}
+        />
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, rgba(255,0,0,0.08) 0%, transparent 70%)' }} />
+      </div>
+
+      <style>{`
+        @keyframes scanline {
+          0%   { top: 0%; }
+          100% { top: 100%; }
+        }
+        @keyframes radarpulse {
+          0%   { transform: scale(1);   opacity: 0.8; }
+          100% { transform: scale(3.5); opacity: 0;   }
+        }
+      `}</style>
+
+      {/* Radar rings */}
+      <div className="relative mb-8">
+        {[1, 2, 3].map(i => (
+          <div
+            key={i}
+            className="absolute rounded-full border-2 border-red-500"
+            style={{
+              inset: `-${i * 30}px`,
+              animation: `radarpulse 2s ease-out ${i * 0.4}s infinite`,
+              opacity: 0,
+            }}
+          />
+        ))}
+        <div className="relative w-36 h-36 rounded-full bg-gradient-to-br from-red-600 to-black flex items-center justify-center border-4 border-white/20 overflow-hidden" style={{ boxShadow: '0 0 80px rgba(255,0,0,0.7)' }}>
+          <ShieldAlert className="w-20 h-20 text-white z-10" style={{ animation: 'bounce 0.6s infinite alternate' }} />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-400/40 to-transparent" style={{ animation: 'spin 2s linear infinite' }} />
         </div>
+      </div>
+
+      {/* Text */}
+      <div className="text-center mb-6 space-y-2">
+        <div className="inline-block px-4 py-1 rounded-full bg-red-600 text-white text-[10px] font-black uppercase tracking-[0.3em]" style={{ animation: 'pulse 1s infinite' }}>
+          🔴 LIVE EMERGENCY BROADCAST
+        </div>
+        <h1
+          className="text-6xl md:text-7xl font-black text-white uppercase tracking-tighter italic"
+          style={{ textShadow: flash ? '0 0 30px #ff0000' : 'none', transition: 'text-shadow 0.1s' }}
+        >
+          SOS ALERT
+        </h1>
+        <p className="text-sm font-bold text-red-400 uppercase tracking-widest" style={{ animation: 'pulse 1s infinite' }}>
+          Nearby donors are being notified...
+        </p>
+      </div>
+
+      {/* Alert card */}
+      <div className="w-full max-w-lg bg-black/80 border-2 border-red-600 rounded-3xl p-6 mb-8 space-y-4" style={{ boxShadow: '0 0 40px rgba(220,38,38,0.3)' }}>
+        <div className="flex items-center gap-3">
+          <span className="h-2 w-2 rounded-full bg-red-500" style={{ animation: 'pulse 1s infinite' }} />
+          <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">{alert.priority} Priority</span>
+          <span className="text-[10px] font-bold text-muted-foreground">· by {alert.creatorName}</span>
+        </div>
+        <p className="text-xl text-white font-bold leading-snug">"{alert.description}"</p>
+        <div className="flex items-center gap-2 bg-red-600/20 border border-red-500/30 px-4 py-3 rounded-2xl">
+          <MapPin className="h-5 w-5 text-red-400 flex-shrink-0" />
+          <span className="text-sm font-bold text-white">{alert.location}</span>
+        </div>
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-lg">
+        <button
+          onClick={onClose}
+          className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold uppercase tracking-widest hover:bg-white/10 transition"
+        >
+          Dismiss
+        </button>
+        <a
+          href={googleMapsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 py-4 rounded-2xl bg-white/10 border border-white/20 text-white font-bold uppercase tracking-widest hover:bg-white/20 transition text-center"
+        >
+          📍 Directions
+        </a>
+        <button
+          onClick={handleAccept}
+          className="flex-1 py-4 rounded-2xl text-white font-black text-lg uppercase tracking-widest transition hover:scale-105"
+          style={{ background: 'linear-gradient(135deg, #dc2626, #991b1b)', boxShadow: '0 10px 40px rgba(220,38,38,0.5)' }}
+        >
+          I'm Coming!
+        </button>
       </div>
     </div>
   );
 }
 
-const PRIORITY_COLORS = {
-  high: { bg: 'bg-red-500/10', border: 'border-red-500/30', badge: 'bg-red-500 text-white', dot: 'bg-red-500', text: 'text-red-400' },
-  medium: { bg: 'bg-orange-500/10', border: 'border-orange-500/30', badge: 'bg-orange-500 text-white', dot: 'bg-orange-500', text: 'text-orange-400' },
-  low: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', badge: 'bg-yellow-500 text-black', dot: 'bg-yellow-500', text: 'text-yellow-400' },
+// ─── Priority colors ──────────────────────────────────────────────────────────
+const P = {
+  high:   { bg: 'bg-red-500/10',    border: 'border-red-500/30',   dot: 'bg-red-500',    text: 'text-red-400'    },
+  medium: { bg: 'bg-orange-500/10', border: 'border-orange-500/30',dot: 'bg-orange-500', text: 'text-orange-400' },
+  low:    { bg: 'bg-yellow-500/10', border: 'border-yellow-500/30',dot: 'bg-yellow-500', text: 'text-yellow-400' },
 };
 
-function AlertCard({ alert, canRespond, distance }: { alert: EmergencyAlert; canRespond: boolean; distance?: number }) {
+// ─── Individual Alert Card ────────────────────────────────────────────────────
+function AlertCard({ alert, canRespond }: { alert: EmergencyAlert & { distance?: number }; canRespond: boolean }) {
   const { respondToAlert, closeAlert } = useEmergencyAlerts();
-  const { user } = useUser();
-  const colors = PRIORITY_COLORS[alert.priority];
+  const c = P[alert.priority];
 
-  const googleMapsUrl = alert.latitude && alert.longitude 
+  const googleMapsUrl = alert.latitude && alert.longitude
     ? `https://www.google.com/maps/dir/?api=1&destination=${alert.latitude},${alert.longitude}`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(alert.location)}`;
 
   return (
-    <div className={cn('rounded-2xl border p-4 space-y-3 transition-all', colors.bg, colors.border)}>
-      {/* Header */}
+    <div className={cn('rounded-2xl border p-4 space-y-3 transition-all', c.bg, c.border)}>
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className={cn('h-2.5 w-2.5 rounded-full flex-shrink-0 animate-pulse', colors.dot)} />
-          <span className={cn('text-xs font-black uppercase tracking-widest', colors.text)}>
-            {alert.priority} Priority
-          </span>
-          {alert.status === 'escalated' && (
-            <span className="text-[10px] font-bold bg-red-900/40 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded-full animate-pulse">
-              ESCALATED
-            </span>
+        <div className="flex items-center gap-2 flex-wrap flex-1">
+          <span className={cn('h-2 w-2 rounded-full flex-shrink-0 animate-pulse', c.dot)} />
+          <span className={cn('text-xs font-black uppercase tracking-widest', c.text)}>{alert.priority} Priority</span>
+          {alert.status === 'accepted' && (
+            <span className="text-[10px] font-bold bg-green-500/20 text-green-400 border border-green-500/30 px-1.5 py-0.5 rounded-full">ACCEPTED</span>
           )}
-          {distance !== undefined && (
+          {(alert as any).distance !== undefined && (
             <span className="text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-0.5 rounded-full">
-              {distance.toFixed(1)} km away
+              {(alert as any).distance.toFixed(1)} km away
             </span>
           )}
         </div>
-        <button onClick={() => closeAlert(alert.id)} className="text-muted-foreground hover:text-foreground transition flex-shrink-0">
+        <button onClick={() => closeAlert(alert.id)} className="text-muted-foreground hover:text-white transition flex-shrink-0">
           <X className="h-4 w-4" />
         </button>
       </div>
 
-      {/* Description */}
-      <p className="text-sm text-foreground leading-relaxed">{alert.description}</p>
+      <p className="text-sm text-foreground leading-relaxed font-medium">{alert.description}</p>
 
-      {/* Location & Time */}
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-center justify-between group/loc">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-1 min-w-0">
             <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-primary" />
             <span className="truncate font-medium text-foreground/80">{alert.location}</span>
           </div>
-          <a 
+          <a
             href={googleMapsUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1 text-[10px] font-bold text-primary hover:underline ml-2 flex-shrink-0 bg-primary/10 px-2 py-1 rounded-lg"
           >
-            <Navigation className="h-3 w-3" />
-            Directions
+            <Navigation className="h-3 w-3" /> Directions
           </a>
         </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <Clock className="h-3.5 w-3.5 flex-shrink-0" />
             <span>{formatDistanceToNow(new Date(alert.createdAt), { addSuffix: true })}</span>
-            <span className="text-muted-foreground/60">• by {alert.creatorName}</span>
+            <span className="text-muted-foreground/60">· by {alert.creatorName}</span>
           </div>
-          <a 
-            href={`/alerts?role=${user?.uid === alert.creatorId ? 'donor' : 'ngo'}&focus=${alert.id}`}
-            className="text-[10px] font-bold text-muted-foreground hover:text-primary transition"
-          >
+          <a href={`/alerts?role=donor&focus=${alert.id}`} className="text-[10px] font-bold text-muted-foreground hover:text-primary transition">
             View on Map
           </a>
         </div>
       </div>
 
-      {/* Action buttons */}
-      {canRespond && alert.status !== 'responded' && alert.responderId !== user?.uid && (
+      {canRespond && alert.status === 'active' && (
         <button
           onClick={() => respondToAlert(alert.id)}
           className="w-full h-9 rounded-xl text-xs font-bold bg-primary text-black hover:bg-primary/90 transition flex items-center justify-center gap-1.5"
         >
-          <CheckCircle2 className="h-4 w-4" />
-          I Can Help – Respond Now
+          <CheckCircle2 className="h-4 w-4" /> I Can Help – Respond Now
         </button>
       )}
-      {alert.responderId === user?.uid && (
+
+      {alert.status === 'accepted' && alert.acceptedBy && (
         <div className="flex items-center gap-2 text-xs font-bold text-green-400">
           <CheckCircle2 className="h-4 w-4" />
-          You are responding to this alert
+          {alert.acceptedByName || 'A donor'} is responding
         </div>
+      )}
+
+      {/* Debug Retry Button */}
+      {alert.priority === 'high' && alert.status === 'active' && (
+        <button
+          onClick={async () => {
+            const { firestore } = initializeFirebase();
+            const { doc, updateDoc, serverTimestamp } = await import('firebase/firestore');
+            await updateDoc(doc(firestore, 'emergency_alerts', alert.id), {
+              lastNotificationSent: serverTimestamp(),
+              retryCount: (alert.retryCount || 0) + 1,
+            });
+          }}
+          className="w-full text-[9px] font-black text-red-500 bg-red-500/5 border border-red-500/20 px-2 py-1.5 rounded-xl hover:bg-red-500/20 transition uppercase tracking-widest"
+        >
+          🔁 Simulate Retry Broadcast
+        </button>
       )}
     </div>
   );
 }
 
+// ─── Main Banner ──────────────────────────────────────────────────────────────
 export function ActiveAlertsBanner({ role }: { role: string }) {
   const { activeAlerts } = useEmergencyAlerts();
   const [expanded, setExpanded] = useState(true);
-  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [sosAlert, setSosAlert] = useState<EmergencyAlert | null>(null);
-  const seenAlertsRef = useRef<Set<string>>(new Set());
+  // Track which alert IDs + lastNotificationSent we've already shown popups for
+  const shownRef = useRef<Set<string>>(new Set());
 
+  // ── Trigger SOS popup for any unseen active/high-priority alert ─────────────
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => console.warn('Location permission denied for radius filtering')
-      );
+    if (activeAlerts.length === 0) return;
+
+    for (const alert of activeAlerts) {
+      if (alert.priority !== 'high' || alert.status !== 'active') continue;
+
+      // Unique key = id + lastNotificationSent timestamp
+      const sentTime = alert.lastNotificationSent
+        ? new Date(alert.lastNotificationSent).getTime()
+        : new Date(alert.createdAt).getTime();
+      const key = `${alert.id}-${sentTime}`;
+
+      if (!shownRef.current.has(key)) {
+        shownRef.current.add(key);
+        setSosAlert(alert);
+        break; // Show one at a time
+      }
     }
-  }, []);
+  }, [activeAlerts]);
 
-  // Filtering logic: In demo mode, show all high priority alerts to everyone within 5km, or all if location fails.
-  const filteredAlerts = activeAlerts.map(alert => {
-    let distance: number | undefined;
-    if (userCoords && alert.latitude && alert.longitude) {
-      distance = calculateDistance(userCoords.lat, userCoords.lng, alert.latitude, alert.longitude);
-    }
-    return { ...alert, distance };
-  }).filter(alert => {
-    // For demo: if we have distance, filter by 5km. If not, show anyway.
-    if (alert.distance === undefined) return true; 
-    return alert.distance <= 5;
-  });
-
-  // Check for new high-priority alerts to trigger the SOS Overlay
-  useEffect(() => {
-    console.log('Detecting alerts for demo:', filteredAlerts.length);
-    if (filteredAlerts.length === 0) return;
-    
-    // Find the newest high priority alert
-    const newHighPriority = filteredAlerts.find(alert => {
-      // Only show popup for donors during the demo as requested
-      const isDonor = role === 'donor';
-      return isDonor && alert.priority === 'high' && (Date.now() - new Date(alert.createdAt).getTime()) < 10000;
-    });
-
-    if (newHighPriority && (!sosAlert || sosAlert.id !== newHighPriority.id)) {
-      setSosAlert(newHighPriority);
-    }
-  }, [filteredAlerts, sosAlert]);
-
-  const highAlertsCount = filteredAlerts.filter(a => a.priority === 'high').length;
-
-  if (filteredAlerts.length === 0) return null;
+  const highCount = activeAlerts.filter(a => a.priority === 'high' && a.status === 'active').length;
 
   return (
     <>
-      {sosAlert && <GlobalSOSOverlay alert={sosAlert} onClose={() => setSosAlert(null)} />}
-      <div className="rounded-2xl border border-red-500/30 bg-red-500/5 overflow-hidden mb-4 animate-in fade-in slide-in-from-top-2">
-      {/* Banner header */}
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-red-500/10 transition"
-      >
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-          <ShieldAlert className="h-4 w-4 text-red-400" />
-          <span className="text-sm font-black text-red-400 uppercase tracking-wide">
-            {filteredAlerts.length} Emergency Alert{filteredAlerts.length > 1 ? 's' : ''} Nearby
-          </span>
-          {highAlertsCount > 0 && (
-            <span className="text-[10px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded-full">
-              {highAlertsCount} HIGH
-            </span>
-          )}
-        </div>
-        <ChevronUp className={cn('h-4 w-4 text-red-400 transition-transform', !expanded && 'rotate-180')} />
-      </button>
+      {/* SOS fullscreen overlay */}
+      {sosAlert && (
+        <GlobalSOSOverlay
+          alert={sosAlert}
+          onClose={() => setSosAlert(null)}
+        />
+      )}
 
-      {/* Alert list */}
-      {expanded && (
-        <div className="px-4 pb-4 space-y-3">
-          {filteredAlerts.slice(0, 5).map(alert => (
-            <AlertCard key={alert.id} alert={alert} canRespond={isNgoOrVolunteer} distance={alert.distance} />
-          ))}
-          {filteredAlerts.length > 5 && (
-            <p className="text-xs text-center text-muted-foreground">
-              +{filteredAlerts.length - 5} more alerts — <a href="/alerts" className="text-primary underline">View All</a>
-            </p>
+      {/* Inline banner — show even if 0 alerts so user sees "no alerts" state */}
+      {activeAlerts.length > 0 && (
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/5 overflow-hidden mb-4">
+          <button
+            onClick={() => setExpanded(e => !e)}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-red-500/10 transition"
+          >
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+              <ShieldAlert className="h-4 w-4 text-red-400" />
+              <span className="text-sm font-black text-red-400 uppercase tracking-wide">
+                {activeAlerts.length} Emergency Alert{activeAlerts.length > 1 ? 's' : ''} Active
+              </span>
+              {highCount > 0 && (
+                <span className="text-[10px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded-full animate-pulse">
+                  {highCount} HIGH
+                </span>
+              )}
+            </div>
+            <ChevronUp className={cn('h-4 w-4 text-red-400 transition-transform', !expanded && 'rotate-180')} />
+          </button>
+
+          {expanded && (
+            <div className="px-4 pb-4 space-y-3">
+              {activeAlerts.slice(0, 5).map(alert => (
+                <AlertCard key={alert.id} alert={alert} canRespond={true} />
+              ))}
+              {activeAlerts.length > 5 && (
+                <p className="text-xs text-center text-muted-foreground">
+                  +{activeAlerts.length - 5} more — <a href="/alerts" className="text-primary underline">View All</a>
+                </p>
+              )}
+            </div>
           )}
         </div>
       )}
-    </div>
     </>
   );
 }

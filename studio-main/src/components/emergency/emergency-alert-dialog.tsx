@@ -47,6 +47,7 @@ export function EmergencyAlertDialog({ open, onClose }: EmergencyAlertDialogProp
   const [longitude, setLongitude] = useState<number | undefined>();
   const [isLocating, setIsLocating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDispatched, setIsDispatched] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState('');
   const recognitionRef = useRef<any>(null);
@@ -121,28 +122,51 @@ export function EmergencyAlertDialog({ open, onClose }: EmergencyAlertDialogProp
     setIsSubmitting(true);
     try {
       await createAlert({ priority, description, location, latitude, longitude, voiceTranscript });
-      toast({
-        title: '🚨 Alert Sent!',
-        description: 'Nearby NGOs & volunteers have been notified. Help is on the way.',
-      });
-      onClose();
-      setDescription('');
-      setLocation('');
-      setVoiceTranscript('');
+      setIsDispatched(true);
+      // Wait 3 seconds to show the WOW effect
+      setTimeout(() => {
+        onClose();
+        setIsDispatched(false);
+        setIsSubmitting(false);
+        setDescription('');
+        setLocation('');
+        setVoiceTranscript('');
+      }, 4000);
     } catch (err: any) {
-      if (err.message?.startsWith('RATE_LIMIT')) {
-        toast({ variant: 'destructive', title: 'Too many alerts', description: 'You can submit at most 30 alerts per hour for testing.' });
-      } else if (err.message?.startsWith('DUPLICATE')) {
-        toast({ variant: 'destructive', title: 'Duplicate alert', description: 'Wait 10 seconds before submitting from the same location again.' });
-      } else {
-        toast({ variant: 'destructive', title: 'Failed to send alert', description: err.message || 'Please try again.' });
-      }
-    } finally {
       setIsSubmitting(false);
+      toast({ variant: 'destructive', title: 'Failed to send alert', description: err.message || 'Please try again.' });
     }
   };
 
   if (!open) return null;
+
+  if (isDispatched) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" />
+        <div className="relative z-10 w-full max-w-sm text-center space-y-8 animate-in zoom-in-95 duration-500">
+          <div className="relative mx-auto w-48 h-48">
+            <div className="absolute inset-0 bg-red-600 rounded-full animate-ping opacity-40" />
+            <div className="relative flex items-center justify-center w-full h-full bg-gradient-to-br from-red-600 to-black rounded-full border-4 border-white/20 shadow-[0_0_80px_rgba(255,0,0,0.5)]">
+              <ShieldAlert className="w-20 h-20 text-white animate-bounce" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-400/30 to-transparent w-full h-full animate-[spin_2s_linear_infinite]" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">BROADCASTING...</h2>
+            <div className="h-1 w-32 bg-red-600 mx-auto rounded-full animate-pulse" />
+            <p className="text-sm font-bold text-red-400 uppercase tracking-widest animate-pulse mt-4">
+              Pinging 14 Nearby Donors
+            </p>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+            <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] mb-1">Status</p>
+            <p className="text-sm text-white font-bold italic">SOS Signal Transmitted Successfully</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center">

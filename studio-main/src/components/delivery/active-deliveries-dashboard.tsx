@@ -3,11 +3,9 @@
 import { useState } from 'react';
 import { useDelivery, DeliveryTracking } from '@/context/delivery-context';
 import { useUser } from '@/firebase';
-import { Bike, MapPin, Navigation, ChevronRight, Package, Clock, ShieldCheck } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Bike, MapPin, ChevronRight, Clock, ShieldCheck } from 'lucide-react';
 import BlinkitTrackingScreen from './blinkit-tracking-screen';
 import VolunteerTrackingControls from './volunteer-tracking-controls';
-import { cn } from '@/lib/utils';
 
 export function ActiveDeliveriesDashboard({ role }: { role: string }) {
   const { activeDeliveries, createDelivery } = useDelivery();
@@ -23,8 +21,8 @@ export function ActiveDeliveriesDashboard({ role }: { role: string }) {
         donationId: 'test-donation',
         volunteerId: user.uid,
         volunteerName: user.displayName || 'John Doe',
-        receiverId: user.uid, // Simulate to self for testing
-        pickupLat: 12.9716, // Bangalore
+        receiverId: user.uid,
+        pickupLat: 12.9716,
         pickupLng: 77.5946,
         destLat: 12.9352,
         destLng: 77.6245,
@@ -43,7 +41,7 @@ export function ActiveDeliveriesDashboard({ role }: { role: string }) {
           Live Trackings <span className="text-primary">({activeDeliveries.length})</span>
         </h2>
         {role === 'volunteer' && (
-          <button 
+          <button
             onClick={handleSimulate}
             disabled={isSimulating}
             className="text-[10px] font-black bg-white/5 border border-white/10 px-4 py-2 rounded-xl text-white uppercase tracking-widest hover:bg-white/10 transition"
@@ -55,14 +53,12 @@ export function ActiveDeliveriesDashboard({ role }: { role: string }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {activeDeliveries.map((delivery) => (
-          <motion.div
+          <div
             key={delivery.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
             className="group relative bg-[#111] border border-white/10 rounded-[2rem] p-6 hover:border-primary/40 transition-all cursor-pointer overflow-hidden shadow-xl"
             onClick={() => setSelectedDelivery(delivery)}
+            style={{ animation: 'fadeIn 0.4s ease' }}
           >
-            {/* Background Accent */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-all" />
             
             <div className="relative z-10 flex items-start justify-between mb-4">
@@ -111,71 +107,38 @@ export function ActiveDeliveriesDashboard({ role }: { role: string }) {
                 Track Live <ChevronRight className="h-3 w-3" />
               </button>
             </div>
-          </motion.div>
+          </div>
         ))}
       </div>
 
-      {/* Tracking Modal / Overlay */}
-      <AnimatePresence>
-        {selectedDelivery && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-0 md:p-6 lg:p-12">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedDelivery(null)}
-              className="absolute inset-0 bg-black/90 backdrop-blur-md"
-            />
-            
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full h-full md:max-w-6xl md:max-h-[850px] bg-[#0a0a0a] md:rounded-[3rem] overflow-hidden border border-white/10 flex flex-col md:flex-row shadow-3xl"
-            >
-              <div className="flex-1 min-h-[300px] relative">
-                <BlinkitTrackingScreen 
-                  delivery={selectedDelivery} 
-                  onClose={() => setSelectedDelivery(null)} 
-                />
+      {/* Tracking Modal */}
+      {selectedDelivery && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-0 md:p-6 lg:p-12">
+          <div
+            onClick={() => setSelectedDelivery(null)}
+            className="absolute inset-0 bg-black/90 backdrop-blur-md"
+          />
+          <div className="relative w-full h-full md:max-w-6xl md:max-h-[850px] bg-[#0a0a0a] md:rounded-[3rem] overflow-hidden border border-white/10 flex flex-col md:flex-row shadow-2xl" style={{ animation: 'zoomIn 0.3s ease' }}>
+            <div className="flex-1 min-h-[300px] relative">
+              <BlinkitTrackingScreen
+                delivery={selectedDelivery}
+                onClose={() => setSelectedDelivery(null)}
+              />
+            </div>
+            {(role === 'volunteer' || role === 'admin') && (
+              <div className="w-full md:w-[400px] bg-[#111] p-8 border-l border-white/10 overflow-y-auto">
+                <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-8">Logistics Control</h3>
+                <VolunteerTrackingControls delivery={selectedDelivery} />
               </div>
-              
-              {/* Desktop Sidebar Controls for Volunteers/Admins */}
-              {(role === 'volunteer' || role === 'admin') && (
-                <div className="w-full md:w-[400px] bg-[#111] p-8 border-l border-white/10 overflow-y-auto">
-                  <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-8">Logistics Control</h3>
-                  <VolunteerTrackingControls delivery={selectedDelivery} />
-                  
-                  <div className="mt-8 space-y-4">
-                    <h4 className="text-xs font-black text-muted-foreground uppercase tracking-widest">Delivery Route</h4>
-                    <div className="space-y-4">
-                      <div className="flex gap-4">
-                        <div className="flex flex-col items-center">
-                          <div className="h-5 w-5 rounded-full bg-green-500 border-4 border-black" />
-                          <div className="w-0.5 h-12 bg-white/10" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-black text-muted-foreground uppercase">Pickup Location</p>
-                          <p className="text-sm font-bold text-white">Green Garden Heights, 4th Block</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-4">
-                        <div className="flex flex-col items-center">
-                          <div className="h-5 w-5 rounded-full bg-blue-500 border-4 border-black animate-pulse" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-black text-muted-foreground uppercase">Destination</p>
-                          <p className="text-sm font-bold text-white">Shelter Home NGO (City Center)</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </motion.div>
+            )}
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes zoomIn { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
+      `}</style>
     </div>
   );
 }
