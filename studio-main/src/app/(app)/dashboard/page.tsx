@@ -280,9 +280,11 @@ const NgoDashboard = () => {
   );
 };
 
-/* ─── Page ──────────────────────────────────────────────── */
-export default function DashboardPage({ searchParams }: { searchParams: Promise<{ role?: UserRole }> }) {
-  const role = use(searchParams)?.role || 'donor';
+import { useSearchParams } from 'next/navigation';
+
+export default function DashboardPage() {
+  const searchParams = useSearchParams();
+  const role = (searchParams.get('role') as UserRole) || 'donor';
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 max-w-7xl">
