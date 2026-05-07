@@ -25,11 +25,21 @@ const schema = z.object({
     description: z.string().min(10, 'Description must be at least 10 characters.'),
     quantity: z.string().min(1, 'Please specify the quantity.'),
     type: z.enum(['Produce', 'Baked Goods', 'Canned Goods', 'Prepared Meal', 'Dairy', 'Pantry']),
-    pickupDeadline: z.date({ required_error: 'A pickup deadline is required.' }),
+    cookedTime: z.date({ required_error: 'Please specify when the food was prepared/cooked.' }).optional().default(() => new Date()),
     location: z.string().min(5, 'Please provide a pickup location.'),
     image: z.any().optional(),
     imageHint: z.string().optional(),
 });
+
+// Configurable food expiry rules (hours from cooked time)
+const FOOD_EXPIRY_RULES: Record<string, number> = {
+    'Prepared Meal': 4,
+    'Dairy': 2,
+    'Baked Goods': 24,
+    'Produce': 48,
+    'Canned Goods': 720, // 30 days
+    'Pantry': 720,
+};
 
 /* ── Shared field styles ──────────────────────────────── */
 const inputCls =
@@ -50,7 +60,7 @@ export function NewDonationForm() {
 
     const form = useForm<z.infer<typeof schema>>({
         resolver: zodResolver(schema),
-        defaultValues: { title: '', description: '', quantity: '', location: (user as any)?.address || '' },
+        defaultValues: { title: '', description: '', quantity: '', type: 'Prepared Meal', cookedTime: new Date(), location: (user as any)?.address || '' },
     });
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,9 +128,14 @@ export function NewDonationForm() {
     function onSubmit(values: z.infer<typeof schema>) {
         if (!user) { toast({ variant: 'destructive', title: 'You must be logged in to donate.' }); return; }
 
+        // Food Expiry Engine: Auto-calculate expiry based on configurable rules
+        const safeHours = FOOD_EXPIRY_RULES[values.type] || 4;
+        const autoExpiryTime = new Date((values.cookedTime || new Date()).getTime() + safeHours * 60 * 60 * 1000);
+
         addDonation({
             id: `donation-${Date.now()}`,
             ...values,
+            pickupDeadline: autoExpiryTime,
             imageUrl: imagePreview || 'https://placehold.co/600x400',
             imageHint: values.imageHint || 'food',
             donorId: user.uid,
@@ -303,10 +318,10 @@ export function NewDonationForm() {
                             <p className="text-xs text-muted-foreground mt-0.5">Provide details for where and when the food can be collected.</p>
                         </div>
 
-                        {/* Pickup Deadline */}
-                        <FormField control={form.control} name="pickupDeadline" render={({ field }) => (
+                        {/* Cooked/Prepared Time */}
+                        <FormField control={form.control} name="cookedTime" render={({ field }) => (
                             <FormItem className="flex flex-col">
-                                <FormLabel className={labelCls}>Pickup Deadline</FormLabel>
+                                <FormLabel className={labelCls}>When was this prepared?</FormLabel>
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <FormControl>
@@ -314,7 +329,7 @@ export function NewDonationForm() {
                                                 type="button"
                                                 className={cn(inputCls, 'flex items-center justify-between text-left', !field.value && 'text-muted-foreground')}
                                             >
-                                                {field.value ? format(field.value, 'PPP') : 'Pick a date'}
+                                                {field.value ? format(field.value, 'PPP p') : 'Pick preparation time'}
                                                 <CalendarIcon className="h-4 w-4 opacity-50 flex-shrink-0" />
                                             </button>
                                         </FormControl>
@@ -324,13 +339,13 @@ export function NewDonationForm() {
                                             mode="single"
                                             selected={field.value}
                                             onSelect={field.onChange}
-                                            disabled={d => d < new Date()}
+                                            disabled={d => d > new Date()}
                                             initialFocus
                                         />
                                     </PopoverContent>
                                 </Popover>
                                 <FormDescription className="text-xs text-muted-foreground">
-                                    The last day this donation should be picked up.
+                                    The system will auto-calculate safe expiry based on the food type and this time.
                                 </FormDescription>
                                 <FormMessage />
                             </FormItem>

@@ -73,6 +73,29 @@ export const DonationsProvider = ({ children }: { children: ReactNode }) => {
     fetchDonations();
   }, [fetchDonations]);
 
+  // Auto Expiry System (Simulated frontend cron job)
+  useEffect(() => {
+    const checkExpiry = () => {
+      setDonations(prev => {
+        let hasChanges = false;
+        const now = new Date();
+        const updated = prev.map(d => {
+          if (d.status === 'available' && new Date(d.pickupDeadline) < now) {
+            hasChanges = true;
+            return { ...d, status: 'expired' as const };
+          }
+          return d;
+        });
+        return hasChanges ? updated : prev;
+      });
+    };
+
+    // Run immediately, then every 60 seconds
+    checkExpiry();
+    const interval = setInterval(checkExpiry, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   const addDonation = async (donation: Donation) => {
     try {
       const dbPayload = {
