@@ -28,23 +28,59 @@ export function useUserProfile() {
 
             if (error) {
                 if (error.code === 'PGRST116') {
-                    // Profile doesn't exist yet, we might need to create it
                     console.log('Profile not found in Supabase.');
                 } else {
                     throw error;
                 }
             }
 
+            // Fallback logic to grab legacy address
+            const getInitialAddresses = async (loadedProfileData?: any): Promise<UserAddress[]> => {
+                if (loadedProfileData?.addresses?.length > 0) return loadedProfileData.addresses;
+                
+                // If they have no addresses array, try to find a legacy address
+                const { mockUsers } = await import('@/lib/mock-data');
+                const mockUser = mockUsers.find(u => u.id === user.uid || u.email === user.email);
+                
+                const legacyAddressStr = loadedProfileData?.address || mockUser?.address || (user as any)?.address;
+                
+                if (legacyAddressStr) {
+                    return [{
+                        id: 'legacy-address-1',
+                        label: 'Primary Address',
+                        name: loadedProfileData?.name || mockUser?.name || user.displayName || 'Default',
+                        phone: loadedProfileData?.phone || mockUser?.phone || '',
+                        fullAddress: legacyAddressStr,
+                        isDefault: true
+                    }];
+                }
+                return [];
+            };
+
             if (data) {
-                // Map Supabase snake_case to our camelCase types if necessary
-                setProfile(data as unknown as User);
+                const addresses = await getInitialAddresses(data);
+                setProfile({ ...(data as unknown as User), addresses });
             } else {
-                // Fallback for presentation: Initialize a mock local profile
-                setProfile({ id: user.uid, email: user.email || '', role: 'ngo', name: user.displayName || 'Demo User', addresses: [] } as any);
+                const addresses = await getInitialAddresses();
+                setProfile({ id: user.uid, email: user.email || '', role: 'ngo', name: user.displayName || 'Demo User', addresses } as any);
             }
         } catch (err: any) {
             console.error('Error fetching profile from Supabase (falling back to mock):', err);
-            setProfile({ id: user.uid, email: user.email || '', role: 'ngo', name: user.displayName || 'Demo User', addresses: [] } as any);
+            
+            const { mockUsers } = await import('@/lib/mock-data');
+            const mockUser = mockUsers.find(u => u.id === user.uid || u.email === user.email);
+            const legacyAddressStr = mockUser?.address || (user as any)?.address;
+            
+            const addresses: UserAddress[] = legacyAddressStr ? [{
+                id: 'legacy-address-1',
+                label: 'Primary Address',
+                name: mockUser?.name || user.displayName || 'Default',
+                phone: mockUser?.phone || '',
+                fullAddress: legacyAddressStr,
+                isDefault: true
+            }] : [];
+
+            setProfile({ id: user.uid, email: user.email || '', role: 'ngo', name: user.displayName || 'Demo User', addresses } as any);
             setError(err);
         } finally {
             setIsLoading(false);
