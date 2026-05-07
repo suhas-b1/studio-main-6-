@@ -1,8 +1,19 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useUser } from '@/firebase';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  query, 
+  where, 
+  onSnapshot, 
+  doc, 
+  serverTimestamp, 
+  orderBy,
+  Timestamp
+} from 'firebase/firestore';
+import { initializeFirebase, useUser } from '@/firebase';
 
 export type AlertPriority = 'high' | 'medium' | 'low';
 export type AlertStatus = 'open' | 'escalated' | 'responded' | 'closed';
@@ -86,19 +97,21 @@ export const EmergencyAlertsProvider = ({ children }: { children: ReactNode }) =
   const { user } = useUser();
   const [alerts, setAlerts] = useState<EmergencyAlert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { firestore } = initializeFirebase();
 
-  const fetchAlerts = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('emergency_alerts')
-        .select('*')
-        .neq('status', 'closed')
-        .order('created_at', { ascending: false });
+  useEffect(() => {
+    // Real-time updates with Firestore onSnapshot
+    const q = query(
+      collection(firestore, 'emergency_alerts'),
+      where('status', 'in', ['open', 'escalated', 'responded']),
+      orderBy('created_at', 'desc')
+    );
 
-      if (error) throw error;
-      if (data) {
-        const mapped: EmergencyAlert[] = data.map((d: any) => ({
-          id: d.id,
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const mapped: EmergencyAlert[] = snapshot.docs.map(docSnap => {
+        const d = docSnap.data();
+        return {
+          id: docSnap.id,
           creatorId: d.creator_id,
           creatorName: d.creator_name,
           priority: d.priority,
@@ -108,29 +121,17 @@ export const EmergencyAlertsProvider = ({ children }: { children: ReactNode }) =
           longitude: d.longitude,
           status: d.status,
           responderId: d.responder_id,
-          createdAt: new Date(d.created_at),
-          escalatedAt: d.escalated_at ? new Date(d.escalated_at) : undefined,
+          createdAt: d.created_at?.toDate() || new Date(),
+          escalatedAt: d.escalated_at?.toDate(),
           voiceTranscript: d.voice_transcript,
-        }));
-        setAlerts(mapped);
-      }
-    } catch (err) {
-      console.warn('Using local alert state (DB unavailable):', err);
-    } finally {
+        };
+      });
+      setAlerts(mapped);
       setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAlerts();
-
-    // Supabase Realtime subscription for live updates
-    const channel = supabase
-      .channel('emergency_alerts_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'emergency_alerts' }, () => {
-        fetchAlerts();
-      })
-      .subscribe();
+    }, (error) => {
+      console.warn('Firestore subscription failed, falling back to empty state:', error);
+      setIsLoading(false);
+    });
 
     // Auto-escalation check every minute
     const escalationInterval = setInterval(() => {
@@ -138,10 +139,10 @@ export const EmergencyAlertsProvider = ({ children }: { children: ReactNode }) =
     }, 60000);
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
       clearInterval(escalationInterval);
     };
-  }, [fetchAlerts]);
+  }, [firestore]);
 
   const createAlert = async (data: Omit<EmergencyAlert, 'id' | 'creatorId' | 'creatorName' | 'status' | 'createdAt'>): Promise<boolean> => {
     if (!user) return false;
@@ -154,51 +155,49 @@ export const EmergencyAlertsProvider = ({ children }: { children: ReactNode }) =
       throw new Error('DUPLICATE: A similar alert from this location was submitted recently.');
     }
 
-    const newAlert: EmergencyAlert = {
-      ...data,
-      id: `alert-${Date.now()}`,
-      creatorId: user.uid,
-      creatorName: user.displayName || user.email || 'Anonymous',
-      status: 'open',
-      createdAt: new Date(),
-    };
-
     try {
-      const { data: dbData, error } = await supabase.from('emergency_alerts').insert([{
-        creator_id: newAlert.creatorId,
-        creator_name: newAlert.creatorName,
-        priority: newAlert.priority,
-        description: newAlert.description,
-        location: newAlert.location,
-        latitude: newAlert.latitude,
-        longitude: newAlert.longitude,
-        status: newAlert.status,
-        voice_transcript: newAlert.voiceTranscript,
-      }]).select().single();
-
-      if (error) throw error;
-      if (dbData) newAlert.id = dbData.id;
+      await addDoc(collection(firestore, 'emergency_alerts'), {
+        creator_id: user.uid,
+        creator_name: user.displayName || user.email || 'Anonymous',
+        priority: data.priority,
+        description: data.description,
+        location: data.location,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        status: 'open',
+        voice_transcript: data.voiceTranscript,
+        created_at: serverTimestamp(),
+      });
+      return true;
     } catch (err) {
-      console.warn('DB insert failed, using local state:', err);
+      console.error('Firestore insert failed:', err);
+      throw err;
     }
-
-    setAlerts(prev => [newAlert, ...prev]);
-    return true;
   };
 
   const respondToAlert = async (alertId: string) => {
     if (!user) return;
     try {
-      await supabase.from('emergency_alerts').update({ status: 'responded', responder_id: user.uid }).eq('id', alertId);
-    } catch (err) { console.warn('DB update failed, local only'); }
-    setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, status: 'responded', responderId: user.uid } : a));
+      const alertRef = doc(firestore, 'emergency_alerts', alertId);
+      await updateDoc(alertRef, { 
+        status: 'responded', 
+        responder_id: user.uid 
+      });
+    } catch (err) {
+      console.error('Firestore update failed:', err);
+    }
   };
 
   const closeAlert = async (alertId: string) => {
     try {
-      await supabase.from('emergency_alerts').update({ status: 'closed' }).eq('id', alertId);
-    } catch (err) { console.warn('DB update failed, local only'); }
-    setAlerts(prev => prev.filter(a => a.id !== alertId));
+      const alertRef = doc(firestore, 'emergency_alerts', alertId);
+      await updateDoc(alertRef, { 
+        status: 'closed',
+        closed_at: serverTimestamp()
+      });
+    } catch (err) {
+      console.error('Firestore update failed:', err);
+    }
   };
 
   return (
