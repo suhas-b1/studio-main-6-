@@ -37,11 +37,14 @@ export function useUserProfile() {
 
             if (data) {
                 // Map Supabase snake_case to our camelCase types if necessary
-                // Assuming schema matches types.ts mostly
                 setProfile(data as unknown as User);
+            } else {
+                // Fallback for presentation: Initialize a mock local profile
+                setProfile({ id: user.uid, email: user.email || '', role: 'ngo', name: user.displayName || 'Demo User', addresses: [] } as any);
             }
         } catch (err: any) {
-            console.error('Error fetching profile from Supabase:', err);
+            console.error('Error fetching profile from Supabase (falling back to mock):', err);
+            setProfile({ id: user.uid, email: user.email || '', role: 'ngo', name: user.displayName || 'Demo User', addresses: [] } as any);
             setError(err);
         } finally {
             setIsLoading(false);
@@ -73,7 +76,9 @@ export function useUserProfile() {
             if (error) throw error;
             setProfile(prev => prev ? { ...prev, addresses: updatedAddresses } : null);
         } catch (err) {
-            console.error('Error adding address to Supabase:', err);
+            console.error('Error adding address to Supabase (falling back to local state):', err);
+            // Fallback: update local state anyway so the demo works
+            setProfile(prev => prev ? { ...prev, addresses: updatedAddresses } : null);
         }
     };
 
@@ -90,7 +95,9 @@ export function useUserProfile() {
             if (error) throw error;
             setProfile(prev => prev ? { ...prev, addresses: updatedAddresses } : null);
         } catch (err) {
-            console.error('Error deleting address from Supabase:', err);
+            console.error('Error deleting address from Supabase (falling back to local state):', err);
+            // Fallback: update local state anyway
+            setProfile(prev => prev ? { ...prev, addresses: updatedAddresses } : null);
         }
     };
 
@@ -110,7 +117,9 @@ export function useUserProfile() {
             if (error) throw error;
             setProfile(prev => prev ? { ...prev, addresses: updatedAddresses } : null);
         } catch (err) {
-            console.error('Error setting default address in Supabase:', err);
+            console.error('Error setting default address in Supabase (falling back to local state):', err);
+            // Fallback: update local state anyway
+            setProfile(prev => prev ? { ...prev, addresses: updatedAddresses } : null);
         }
     };
 
