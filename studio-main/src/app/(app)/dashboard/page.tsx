@@ -11,6 +11,8 @@ import { cn } from '@/lib/utils';
 import { ActiveAlertsBanner } from '@/components/emergency/active-alerts-banner';
 import { EmergencyButton } from '@/components/emergency/emergency-button';
 import { useEmergencyAlerts } from '@/context/emergency-alerts-context';
+import { calculateDistance } from '@/lib/distance';
+import { useEffect, useState } from 'react';
 
 /* ─── small helpers ─────────────────────────────────────── */
 const BAR_DATA = [38, 55, 42, 70, 63, 85, 100]; // last 7 days, % of max
@@ -42,18 +44,33 @@ const statusMeta = {
 
 function EmergencyHighlights() {
   const { activeAlerts } = useEmergencyAlerts();
-  const highAlerts = activeAlerts.filter(a => a.priority === 'high').slice(0, 2);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
 
-  if (highAlerts.length === 0) return null;
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {}
+      );
+    }
+  }, []);
+
+  const filtered = activeAlerts.filter(alert => {
+    if (!alert.latitude || !alert.longitude || !userCoords) return alert.priority === 'high';
+    const dist = calculateDistance(userCoords.lat, userCoords.lng, alert.latitude, alert.longitude);
+    return dist <= 5 && alert.priority === 'high';
+  }).slice(0, 2);
+
+  if (filtered.length === 0) return null;
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Urgent Food Crises</h3>
+        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Nearby High Priority</h3>
         <Link href="/alerts?role=donor" className="text-[10px] font-bold text-primary hover:underline">View All Alerts</Link>
       </div>
       <div className="grid gap-3">
-        {highAlerts.map(alert => (
+        {filtered.map(alert => (
           <Link key={alert.id} href={`/alerts?role=donor&focus=${alert.id}`}>
             <div className="group rounded-2xl border border-red-500/30 bg-red-500/5 p-4 transition-all hover:bg-red-500/10 hover:border-red-500/50">
               <div className="flex items-start justify-between gap-3">

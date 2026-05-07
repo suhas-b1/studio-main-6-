@@ -2,10 +2,11 @@
 
 import { useEmergencyAlerts, EmergencyAlert } from '@/context/emergency-alerts-context';
 import { useUser } from '@/firebase';
-import { ShieldAlert, MapPin, Clock, CheckCircle2, ChevronUp, X } from 'lucide-react';
+import { ShieldAlert, MapPin, Clock, CheckCircle2, ChevronUp, X, Navigation } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
+import { calculateDistance } from '@/lib/distance';
+import { useEffect, useState } from 'react';
 
 const PRIORITY_COLORS = {
   high: { bg: 'bg-red-500/10', border: 'border-red-500/30', badge: 'bg-red-500 text-white', dot: 'bg-red-500', text: 'text-red-400' },
@@ -13,10 +14,14 @@ const PRIORITY_COLORS = {
   low: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', badge: 'bg-yellow-500 text-black', dot: 'bg-yellow-500', text: 'text-yellow-400' },
 };
 
-function AlertCard({ alert, canRespond }: { alert: EmergencyAlert; canRespond: boolean }) {
+function AlertCard({ alert, canRespond, distance }: { alert: EmergencyAlert; canRespond: boolean; distance?: number }) {
   const { respondToAlert, closeAlert } = useEmergencyAlerts();
   const { user } = useUser();
   const colors = PRIORITY_COLORS[alert.priority];
+
+  const googleMapsUrl = alert.latitude && alert.longitude 
+    ? `https://www.google.com/maps/dir/?api=1&destination=${alert.latitude},${alert.longitude}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(alert.location)}`;
 
   return (
     <div className={cn('rounded-2xl border p-4 space-y-3 transition-all', colors.bg, colors.border)}>
@@ -32,9 +37,9 @@ function AlertCard({ alert, canRespond }: { alert: EmergencyAlert; canRespond: b
               ESCALATED
             </span>
           )}
-          {alert.status === 'responded' && (
-            <span className="text-[10px] font-bold bg-green-900/40 text-green-300 border border-green-500/30 px-1.5 py-0.5 rounded-full">
-              HELP COMING
+          {distance !== undefined && (
+            <span className="text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-0.5 rounded-full">
+              {distance.toFixed(1)} km away
             </span>
           )}
         </div>
@@ -53,16 +58,15 @@ function AlertCard({ alert, canRespond }: { alert: EmergencyAlert; canRespond: b
             <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-primary" />
             <span className="truncate font-medium text-foreground/80">{alert.location}</span>
           </div>
-          {alert.latitude && alert.longitude && (
-            <a 
-              href={`https://www.google.com/maps?q=${alert.latitude},${alert.longitude}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[10px] font-bold text-primary hover:underline ml-2 flex-shrink-0"
-            >
-              Navigate
-            </a>
-          )}
+          <a 
+            href={googleMapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-[10px] font-bold text-primary hover:underline ml-2 flex-shrink-0 bg-primary/10 px-2 py-1 rounded-lg"
+          >
+            <Navigation className="h-3 w-3" />
+            Directions
+          </a>
         </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -102,14 +106,38 @@ function AlertCard({ alert, canRespond }: { alert: EmergencyAlert; canRespond: b
 export function ActiveAlertsBanner({ role }: { role: string }) {
   const { activeAlerts } = useEmergencyAlerts();
   const [expanded, setExpanded] = useState(true);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
 
-  const highAlerts = activeAlerts.filter(a => a.priority === 'high');
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => console.warn('Location permission denied for radius filtering')
+      );
+    }
+  }, []);
+
   const isNgoOrVolunteer = role === 'ngo';
+  
+  // Filtering logic: Donors only see alerts within 5km. NGOs see everything.
+  const filteredAlerts = activeAlerts.map(alert => {
+    let distance: number | undefined;
+    if (userCoords && alert.latitude && alert.longitude) {
+      distance = calculateDistance(userCoords.lat, userCoords.lng, alert.latitude, alert.longitude);
+    }
+    return { ...alert, distance };
+  }).filter(alert => {
+    if (isNgoOrVolunteer) return true; // NGOs see all
+    if (alert.distance === undefined) return true; // Show if distance unknown (fallback)
+    return alert.distance <= 5; // Donors only see within 5km
+  });
 
-  if (activeAlerts.length === 0) return null;
+  const highAlertsCount = filteredAlerts.filter(a => a.priority === 'high').length;
+
+  if (filteredAlerts.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-red-500/30 bg-red-500/5 overflow-hidden mb-4">
+    <div className="rounded-2xl border border-red-500/30 bg-red-500/5 overflow-hidden mb-4 animate-in fade-in slide-in-from-top-2">
       {/* Banner header */}
       <button
         onClick={() => setExpanded(!expanded)}
@@ -119,11 +147,11 @@ export function ActiveAlertsBanner({ role }: { role: string }) {
           <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
           <ShieldAlert className="h-4 w-4 text-red-400" />
           <span className="text-sm font-black text-red-400 uppercase tracking-wide">
-            {activeAlerts.length} Active Emergency Alert{activeAlerts.length > 1 ? 's' : ''}
+            {filteredAlerts.length} Emergency Alert{filteredAlerts.length > 1 ? 's' : ''} Nearby
           </span>
-          {highAlerts.length > 0 && (
+          {highAlertsCount > 0 && (
             <span className="text-[10px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded-full">
-              {highAlerts.length} HIGH
+              {highAlertsCount} HIGH
             </span>
           )}
         </div>
@@ -133,12 +161,12 @@ export function ActiveAlertsBanner({ role }: { role: string }) {
       {/* Alert list */}
       {expanded && (
         <div className="px-4 pb-4 space-y-3">
-          {activeAlerts.slice(0, 5).map(alert => (
-            <AlertCard key={alert.id} alert={alert} canRespond={isNgoOrVolunteer} />
+          {filteredAlerts.slice(0, 5).map(alert => (
+            <AlertCard key={alert.id} alert={alert} canRespond={isNgoOrVolunteer} distance={alert.distance} />
           ))}
-          {activeAlerts.length > 5 && (
+          {filteredAlerts.length > 5 && (
             <p className="text-xs text-center text-muted-foreground">
-              +{activeAlerts.length - 5} more alerts — <a href="/alerts" className="text-primary underline">View All</a>
+              +{filteredAlerts.length - 5} more alerts — <a href="/alerts" className="text-primary underline">View All</a>
             </p>
           )}
         </div>

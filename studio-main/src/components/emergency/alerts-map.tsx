@@ -84,6 +84,10 @@ export default function AlertsMap() {
           iconAnchor: [18, 18],
         });
 
+        const googleMapsUrl = alert.latitude && alert.longitude 
+          ? `https://www.google.com/maps/dir/?api=1&destination=${alert.latitude},${alert.longitude}`
+          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(alert.location)}`;
+
         const marker = L.marker([alert.latitude!, alert.longitude!], { icon: svgIcon })
           .addTo(map)
           .bindPopup(`
@@ -93,7 +97,19 @@ export default function AlertsMap() {
               </div>
               <p style="font-size:13px;margin:0 0 6px;color:#fff">${alert.description}</p>
               <p style="font-size:11px;color:#888;margin:0">📍 ${alert.location}</p>
-              <p style="font-size:11px;color:#888;margin:4px 0 0">By: ${alert.creatorName}</p>
+              <p style="font-size:11px;color:#888;margin:4px 0 8px">By: ${alert.creatorName}</p>
+              <a 
+                href="${googleMapsUrl}" 
+                target="_blank" 
+                style="
+                  display:block;width:100%;text-align:center;
+                  background:#f97316;color:#000;padding:8px;
+                  border-radius:8px;font-weight:900;font-size:11px;
+                  text-decoration:none;text-transform:uppercase;
+                "
+              >
+                🚀 Get Directions
+              </a>
             </div>
           `, {
             className: 'dark-popup',
