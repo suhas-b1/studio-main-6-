@@ -13,6 +13,10 @@ export default function AlertsMap() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const { activeAlerts } = useEmergencyAlerts();
+  
+  // Get focusId from URL to zoom in
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const focusId = searchParams?.get('focus');
 
   useEffect(() => {
     if (typeof window === 'undefined' || !mapRef.current || mapInstanceRef.current) return;
@@ -58,7 +62,11 @@ export default function AlertsMap() {
     import('leaflet').then(L => {
       const validAlerts = activeAlerts.filter(a => a.latitude && a.longitude);
       
-      if (validAlerts.length > 0) {
+      // Auto-zoom logic: if focusId exists, zoom to it. Otherwise fit all.
+      const focusedAlert = validAlerts.find(a => a.id === focusId);
+      if (focusedAlert) {
+        map.setView([focusedAlert.latitude!, focusedAlert.longitude!], 16);
+      } else if (validAlerts.length > 0) {
         const bounds = L.latLngBounds(validAlerts.map(a => [a.latitude!, a.longitude!]));
         map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
       }
@@ -115,11 +123,15 @@ export default function AlertsMap() {
             className: 'dark-popup',
           });
 
+        if (alert.id === focusId) {
+          marker.openPopup();
+        }
+
         newMarkers.push(marker);
       });
       mapInstanceRef.current.markers = newMarkers;
     });
-  }, [activeAlerts]);
+  }, [activeAlerts, focusId]);
 
   return (
     <>
