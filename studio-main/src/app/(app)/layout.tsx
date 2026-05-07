@@ -9,6 +9,7 @@ import { Logo } from '@/components/common/logo';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AppShell } from '@/components/app-shell/app-shell';
 import { DonationsProvider } from '@/context/donations-context';
+import { EmergencyAlertsProvider } from '@/context/emergency-alerts-context';
 import dynamic from 'next/dynamic';
 import type { UserRole } from '@/lib/types';
 
@@ -67,21 +68,23 @@ function AppLayoutContent({ children }: { children: ReactNode }) {
 
 
   return (
-    <DonationsProvider>
-      <AppShell role={role} user={user}>
-        <Suspense fallback={
-          <div className="flex h-full items-center justify-center">
-            <div className="flex flex-col items-center gap-4">
-              <Logo />
-              <p>Loading page...</p>
+    <EmergencyAlertsProvider>
+      <DonationsProvider>
+        <AppShell role={role} user={user}>
+          <Suspense fallback={
+            <div className="flex h-full items-center justify-center">
+              <div className="flex flex-col items-center gap-4">
+                <Logo />
+                <p>Loading page...</p>
+              </div>
             </div>
-          </div>
-        }>
-          {children}
-        </Suspense>
-      </AppShell>
-      <AiBot />
-    </DonationsProvider>
+          }>
+            {children}
+          </Suspense>
+        </AppShell>
+        <AiBot />
+      </DonationsProvider>
+    </EmergencyAlertsProvider>
   );
 }
 

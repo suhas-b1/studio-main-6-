@@ -10,6 +10,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { ActiveAlertsBanner } from '@/components/emergency/active-alerts-banner';
+import { EmergencyButton } from '@/components/emergency/emergency-button';
 
 /* ─── small helpers ─────────────────────────────────────── */
 const BAR_DATA = [38, 55, 42, 70, 63, 85, 100]; // last 7 days, % of max
@@ -297,15 +299,27 @@ export default function DashboardPage() {
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 max-w-7xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-black text-foreground">
-          {role === 'donor' ? 'Donor Dashboard' : 'Receiver Dashboard'}
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {role === 'donor' ? 'Your food rescue impact at a glance.' : 'Find and claim food donations near you.'}
-        </p>
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-black text-foreground">
+            {role === 'donor' ? 'Donor Dashboard' : 'Receiver Dashboard'}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {role === 'donor' ? 'Your food rescue impact at a glance.' : 'Find and claim food donations near you.'}
+          </p>
+        </div>
+        <Link href={`/alerts?role=${role}`} className="flex items-center gap-1.5 text-xs font-bold text-red-400 border border-red-500/30 rounded-xl px-3 py-2 bg-red-500/10 hover:bg-red-500/20 transition">
+          🚨 Alerts
+        </Link>
       </div>
+
+      {/* Emergency Alerts Banner - visible to all */}
+      <ActiveAlertsBanner role={role} />
+
       {role === 'donor' ? <DonorDashboard /> : <NgoDashboard />}
+
+      {/* Floating SOS button on mobile */}
+      <EmergencyButton variant="fab" />
     </div>
   );
 }
