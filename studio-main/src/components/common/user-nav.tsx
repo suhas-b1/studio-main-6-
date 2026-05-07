@@ -87,6 +87,15 @@ export function UserNav({ role = 'donor' }: { role: UserRole }) {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuItem asChild>
+             <Link href={`/dashboard?role=${role === 'donor' ? 'ngo' : 'donor'}`}>
+              <UserIcon className="mr-2 h-4 w-4" />
+              <span>Switch to {role === 'donor' ? 'Receiver View' : 'Donor View'}</span>
+            </Link>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
             <span>Log out</span>
