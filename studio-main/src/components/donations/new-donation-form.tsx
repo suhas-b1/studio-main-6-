@@ -322,14 +322,52 @@ export function NewDonationForm() {
                         <FormField control={form.control} name="cookedTime" render={({ field }) => (
                             <FormItem className="flex flex-col">
                                 <FormLabel className={labelCls}>When was this prepared?</FormLabel>
-                                <FormControl>
-                                    <input 
-                                        type="datetime-local" 
-                                        className={cn(inputCls, 'w-full')}
-                                        value={field.value ? format(field.value, "yyyy-MM-dd'T'HH:mm") : ''}
-                                        onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
-                                    />
-                                </FormControl>
+                                <div className="flex gap-2">
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <FormControl>
+                                                <button
+                                                    type="button"
+                                                    className={cn(inputCls, 'flex-1 flex items-center justify-between text-left', !field.value && 'text-muted-foreground')}
+                                                >
+                                                    {field.value ? format(field.value, 'PPP') : 'Pick Date'}
+                                                    <CalendarIcon className="h-4 w-4 opacity-50 flex-shrink-0" />
+                                                </button>
+                                            </FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                                mode="single"
+                                                selected={field.value}
+                                                onSelect={(date) => {
+                                                    if (!date) return;
+                                                    // Preserve existing time
+                                                    const current = field.value || new Date();
+                                                    date.setHours(current.getHours());
+                                                    date.setMinutes(current.getMinutes());
+                                                    field.onChange(date);
+                                                }}
+                                                initialFocus
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+                                    <FormControl>
+                                        <input
+                                            type="time"
+                                            className={cn(inputCls, 'w-32')}
+                                            value={field.value ? format(field.value, 'HH:mm') : '12:00'}
+                                            onChange={(e) => {
+                                                const timeStr = e.target.value;
+                                                if (!timeStr) return;
+                                                const [hours, minutes] = timeStr.split(':').map(Number);
+                                                const newDate = field.value ? new Date(field.value) : new Date();
+                                                newDate.setHours(hours);
+                                                newDate.setMinutes(minutes);
+                                                field.onChange(newDate);
+                                            }}
+                                        />
+                                    </FormControl>
+                                </div>
                                 <FormDescription className="text-xs text-muted-foreground">
                                     The system will auto-calculate safe expiry based on the food type and this time.
                                 </FormDescription>
